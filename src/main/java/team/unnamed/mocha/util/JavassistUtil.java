@@ -110,8 +110,11 @@ public class JavassistUtil {
                 bytecode.addInvokestatic(
                         fromPrimitive.getWrapperName(),
                         "valueOf",
-                        "(" + fromPrimitive.getDescriptor() + ")L" + to.getName().replace('.', '/') + ";"
+                        "(" + fromPrimitive.getDescriptor() + ")L" + fromPrimitive.getWrapperName().replace('.', '/') + ";"
                 );
+
+                // wrapper to object
+                bytecode.addCheckcast(to);
             }
         } else {
             if (to.isPrimitive()) {

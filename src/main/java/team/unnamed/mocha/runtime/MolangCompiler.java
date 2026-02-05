@@ -149,7 +149,7 @@ public final class MolangCompiler {
         }
 
         final CtClass interfaceCtClass = JavassistUtil.getClassUnchecked(classPool, clazz);
-        final String scriptClassName = getClass().getPackage().getName() + ".MolangFunctionImpl_" + clazz.getSimpleName() + "_" + implementedMethod.getName()
+        final String scriptClassName = clazz.getPackage().getName() + ".MolangFunctionImpl_" + clazz.getSimpleName() + "_" + implementedMethod.getName()
                 + "_" + Long.toHexString(System.currentTimeMillis()) + "_" + Integer.toHexString(RANDOM.nextInt(2024));
 
         final CtClass scriptCtClass = classPool.makeClass(scriptClassName);
@@ -288,7 +288,7 @@ public final class MolangCompiler {
         }
         final Class<?> compiledClass;
         try {
-            compiledClass = classPool.toClass(scriptCtClass, getClass(), classLoader, null);
+            compiledClass = classPool.toClass(scriptCtClass, clazz, clazz.getClassLoader(), null);
         } catch (final CannotCompileException e) {
             throw new IllegalStateException("Couldn't compile script class", e);
         }

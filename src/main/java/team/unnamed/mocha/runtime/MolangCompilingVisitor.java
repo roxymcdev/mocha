@@ -283,16 +283,6 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
         if (expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
-        } else if (expectedType == null || expectedType == CtClass.doubleType) {
-            // expects a double, happy!
-            if (value == 1.0D) {
-                bytecode.addOpcode(Bytecode.DCONST_1);
-            } else if (value == 0.0D) {
-                bytecode.addOpcode(Bytecode.DCONST_0);
-            } else {
-                bytecode.addLdc2w(value);
-            }
-            return new CompileVisitResult(CtClass.doubleType);
         } else if (expectedType == CtClass.booleanType) {
             // expects a boolean, push boolean
             if (value != 0.0D) {
@@ -310,9 +300,19 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
             bytecode.addLdc2w((long) value);
             return new CompileVisitResult(CtClass.longType);
         } else {
-            System.err.println("[warning] expected type " + expectedType + " has no possible cast from double (" + expression + ")");
-            // evaluate to zero
-            bytecode.addConstZero(expectedType);
+            // push double
+            if (value == 1.0D) {
+                bytecode.addOpcode(Bytecode.DCONST_1);
+            } else if (value == 0.0D) {
+                bytecode.addOpcode(Bytecode.DCONST_0);
+            } else {
+                bytecode.addLdc2w(value);
+            }
+
+            if (expectedType != null && expectedType != CtClass.doubleType) {
+                JavassistUtil.addCast(bytecode, CtClass.doubleType, expectedType);
+            }
+
             return new CompileVisitResult(expectedType);
         }
     }
@@ -322,15 +322,16 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
         if (expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
-        } else if (expectedType == null || expectedType == stringCtType) {
-            // expected a string, happy
-            bytecode.addLdc(expression.value());
-            return new CompileVisitResult(stringCtType);
-        } else {
-            // evaluate to zero
-            bytecode.addConstZero(expectedType);
-            return new CompileVisitResult(expectedType);
         }
+
+        // push string
+        bytecode.addLdc(expression.value());
+
+        if (expectedType != null && expectedType != stringCtType) {
+            JavassistUtil.addCast(bytecode, stringCtType, expectedType);
+        }
+
+        return new CompileVisitResult(expectedType);
     }
 
     @Override
