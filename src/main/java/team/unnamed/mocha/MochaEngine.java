@@ -23,6 +23,7 @@
  */
 package team.unnamed.mocha;
 
+import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -236,7 +238,9 @@ public interface MochaEngine<T> {
      * @return The compiled function.
      * @since 3.0.0
      */
-    <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull Class<F> interfaceType);
+    default <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull Class<F> interfaceType) {
+        return compile(reader, TypeToken.of(interfaceType));
+    }
 
     /**
      * Compiles the given code into a Molang function
@@ -249,6 +253,75 @@ public interface MochaEngine<T> {
      * @since 3.0.0
      */
     default <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull String code, final @NotNull Class<F> interfaceType) {
+        requireNonNull(code, "code");
+        try (final StringReader reader = new StringReader(code)) {
+            return compile(reader, interfaceType);
+        }
+    }
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param reader        The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method and implement {@link MochaCompiledFunction}.
+     * @return The compiled function.
+     * @since 3.0.1-roxy.1
+     */
+    @SuppressWarnings("unchecked")
+    default @NotNull MochaCompiledFunction compile(final @NotNull Reader reader, final @NotNull Type interfaceType) {
+        requireNonNull(interfaceType, "type");
+
+        TypeToken<?> typeToken = TypeToken.of(interfaceType);
+
+        if (!typeToken.isSubtypeOf(MochaCompiledFunction.class)) {
+            throw new IllegalArgumentException("Target type must implement " + MochaCompiledFunction.class.getName());
+        }
+
+        return compile(reader, (TypeToken<? extends MochaCompiledFunction>) typeToken);
+    }
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param code          The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method and implement {@link MochaCompiledFunction}.
+     * @return The compiled function.
+     * @since 3.0.1-roxy.1
+     */
+    default @NotNull MochaCompiledFunction compile(final @NotNull String code, final @NotNull Type interfaceType) {
+        requireNonNull(code, "code");
+        try (final StringReader reader = new StringReader(code)) {
+            return compile(reader, interfaceType);
+        }
+    }
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param reader        The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method.
+     * @return The compiled function.
+     * @since 3.0.1-roxy.1
+     */
+    <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull TypeToken<F> interfaceType);
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param code          The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method.
+     * @return The compiled function.
+     * @since 3.0.1-roxy.1
+     */
+    default <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull String code, final @NotNull TypeToken<F> interfaceType) {
         requireNonNull(code, "code");
         try (final StringReader reader = new StringReader(code)) {
             return compile(reader, interfaceType);

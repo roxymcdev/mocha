@@ -23,6 +23,7 @@
  */
 package team.unnamed.mocha.runtime;
 
+import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.bytecode.Bytecode;
@@ -36,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 
 final class FunctionCompileState {
     private final MolangCompiler compiler;
+    private final TypeToken<?> typeToken;
 
     private final ClassPool classPool;
     private final CtClass ctClass;
@@ -49,13 +51,16 @@ final class FunctionCompileState {
 
     FunctionCompileState(
             MolangCompiler compiler,
+            TypeToken<?> typeToken,
             ClassPool classPool,
-            CtClass ctClass, Bytecode bytecode,
+            CtClass ctClass,
+            Bytecode bytecode,
             Method method,
             Scope scope,
             Map<String, Integer> argumentParameterIndexes
     ) {
         this.compiler = requireNonNull(compiler, "compiler");
+        this.typeToken = requireNonNull(typeToken, "typeToken");
         this.classPool = requireNonNull(classPool, "classPool");
         this.ctClass = requireNonNull(ctClass, "ctClass");
         this.bytecode = requireNonNull(bytecode, "bytecode");
@@ -66,6 +71,10 @@ final class FunctionCompileState {
 
     public @NotNull MolangCompiler compiler() {
         return compiler;
+    }
+
+    public @NotNull TypeToken<?> typeToken() {
+        return typeToken;
     }
 
     public @NotNull ClassPool classPool() {

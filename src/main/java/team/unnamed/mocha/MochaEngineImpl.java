@@ -23,6 +23,7 @@
  */
 package team.unnamed.mocha;
 
+import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -59,7 +60,7 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
         scopeBuilder.accept(builder);
         this.scope = builder.build();
         this.entity = entity;
-        this.compiler = new MolangCompiler(entity, getClass().getClassLoader(), scope);
+        this.compiler = new MolangCompiler(entity, scope);
     }
 
     @Override
@@ -171,7 +172,7 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
     }
 
     @Override
-    public <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull Class<F> interfaceType) {
+    public <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull TypeToken<F> interfaceType) {
         List<Expression> parsed;
         try {
             parsed = parse(reader);

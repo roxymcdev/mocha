@@ -23,8 +23,10 @@
  */
 package team.unnamed.mocha.runtime;
 
+import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtPrimitiveType;
 import javassist.NotFoundException;
 import javassist.bytecode.Bytecode;
 import javassist.bytecode.Descriptor;
@@ -71,6 +73,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
 
     private final ExpressionInterpreter<?> interpreter;
 
+    private final TypeToken<?> typeToken;
     private final ClassPool classPool;
     private final Bytecode bytecode;
     private final Method method;
@@ -82,6 +85,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     private final Map<String, Integer> localsByName = new CaseInsensitiveStringHashMap<>();
 
     private final CtClass stringCtType;
+    private final CtClass doubleCtType;
     /**
      * The method return type
      */
@@ -95,6 +99,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     MolangCompilingVisitor(final @NotNull FunctionCompileState compileState) {
         this.interpreter = new ExpressionInterpreter<>(null, compileState.scope());
         this.functionCompileState = compileState;
+        this.typeToken = compileState.typeToken();
         this.classPool = compileState.classPool();
         this.bytecode = compileState.bytecode();
         this.method = compileState.method();
@@ -103,7 +108,8 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
 
         try {
             this.stringCtType = classPool.get(String.class.getName());
-            this.methodReturnType = classPool.get(method.getReturnType().getName());
+            this.doubleCtType = classPool.get(Double.class.getName());
+            this.methodReturnType = classPool.get(typeToken.resolveType(method.getGenericReturnType()).getRawType().getName());
         } catch (final NotFoundException e) {
             throw new IllegalStateException("Couldn't find CtClass for standard classes", e);
         }
@@ -283,24 +289,30 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
         if (expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
-        } else if (expectedType == CtClass.booleanType) {
+        } else if (expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.booleanType, expectedType)) {
             // expects a boolean, push boolean
             if (value != 0.0D) {
                 bytecode.addOpcode(Bytecode.ICONST_1);
             } else {
                 bytecode.addOpcode(Bytecode.ICONST_0);
             }
-            return new CompileVisitResult(CtClass.booleanType);
-        } else if (expectedType == CtClass.intType) {
+            // wrap if needed
+            JavassistUtil.addCast(bytecode, CtClass.booleanType, expectedType);
+            return new CompileVisitResult(expectedType);
+        } else if (expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.intType, expectedType)) {
             // expects an int, push int
             bytecode.addLdc((int) value);
-            return new CompileVisitResult(CtClass.intType);
-        } else if (expectedType == CtClass.longType) {
+            // wrap if needed
+            JavassistUtil.addCast(bytecode, CtClass.intType, expectedType);
+            return new CompileVisitResult(expectedType);
+        } else if (expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.longType, expectedType)) {
             // expects a long, push long
             bytecode.addLdc2w((long) value);
-            return new CompileVisitResult(CtClass.longType);
-        } else {
-            // push double
+            // wrap if needed
+            JavassistUtil.addCast(bytecode, CtClass.longType, expectedType);
+            return new CompileVisitResult(expectedType);
+        } else if (expectedType == null || expectedType == CtClass.doubleType || JavassistUtil.isSubtypeOf(doubleCtType, expectedType)) {
+            // expects a double or it's supertype, push double
             if (value == 1.0D) {
                 bytecode.addOpcode(Bytecode.DCONST_1);
             } else if (value == 0.0D) {
@@ -309,10 +321,16 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
                 bytecode.addLdc2w(value);
             }
 
-            if (expectedType != null && expectedType != CtClass.doubleType) {
+            if (expectedType != null) {
+                // wrap if needed
                 JavassistUtil.addCast(bytecode, CtClass.doubleType, expectedType);
             }
 
+            return new CompileVisitResult(expectedType);
+        } else {
+            System.err.println("[warning] expected type " + expectedType + " has no possible cast from double (" + expression + ")");
+            // evaluate to zero
+            bytecode.addConstZero(expectedType);
             return new CompileVisitResult(expectedType);
         }
     }
@@ -322,16 +340,15 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
         if (expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
+        } else if (expectedType == null || JavassistUtil.isSubtypeOf(stringCtType, expectedType)) {
+            // expects a string or it's supertype, push string
+            bytecode.addLdc(expression.value());
+            return new CompileVisitResult(expectedType);
+        } else {
+            // evaluate to zero
+            bytecode.addConstZero(expectedType);
+            return new CompileVisitResult(expectedType);
         }
-
-        // push string
-        bytecode.addLdc(expression.value());
-
-        if (expectedType != null && expectedType != stringCtType) {
-            JavassistUtil.addCast(bytecode, stringCtType, expectedType);
-        }
-
-        return new CompileVisitResult(expectedType);
     }
 
     @Override
@@ -492,7 +509,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
         final CtClass parameterCtType;
 
         try {
-            parameterCtType = classPool.get(parameter.getType().getName());
+            parameterCtType = classPool.get(typeToken.resolveType(parameter.getParameterizedType()).getRawType().getName());
         } catch (NotFoundException e) {
             throw new RuntimeException(e);
         }

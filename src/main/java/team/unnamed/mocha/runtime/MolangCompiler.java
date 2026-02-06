@@ -23,6 +23,7 @@
  */
 package team.unnamed.mocha.runtime;
 
+import com.google.common.reflect.TypeToken;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -63,15 +64,13 @@ public final class MolangCompiler {
     private static final Random RANDOM = new Random();
 
     private final Object entity;
-    private final ClassLoader classLoader;
     private final ClassPool classPool;
 
     private final Scope scope;
     private Consumer<byte @NotNull []> postCompile;
 
-    public MolangCompiler(final @Nullable Object entity, final @NotNull ClassLoader classLoader, final @NotNull Scope scope) {
+    public MolangCompiler(final @Nullable Object entity, final @NotNull Scope scope) {
         this.entity = entity;
-        this.classLoader = requireNonNull(classLoader, "classLoader");
         this.classPool = ClassPool.getDefault();
         this.scope = requireNonNull(scope, "scope");
     }
@@ -88,14 +87,17 @@ public final class MolangCompiler {
         this.postCompile = postCompile;
     }
 
-    public <T extends MochaCompiledFunction> @NotNull T compile(final @NotNull List<Expression> expressions, final @NotNull Class<T> clazz) {
+    @SuppressWarnings("unchecked")
+    public <T extends MochaCompiledFunction> @NotNull T compile(final @NotNull List<Expression> expressions, final @NotNull TypeToken<T> typeToken) {
         requireNonNull(expressions, "expressions");
-        requireNonNull(clazz, "clazz");
+        requireNonNull(typeToken, "typeToken");
+
+        Class<? super T> clazz = typeToken.getRawType();
 
         if (clazz == MochaFunction.class && expressions.isEmpty()) {
             // no expressions and the target type is MochaFunction,
             // we know the NOP function
-            return clazz.cast(MochaFunction.nop());
+            return (T) MochaFunction.nop();
         }
 
         if (!clazz.isInterface()) {
@@ -141,7 +143,7 @@ public final class MolangCompiler {
 
                 argumentParameterIndexes.put(name, i);
                 try {
-                    ctParameters[i] = classPool.get(parameter.getType().getName());
+                    ctParameters[i] = classPool.get(typeToken.resolveType(parameter.getParameterizedType()).getRawType().getName());
                 } catch (NotFoundException e) {
                     throw new RuntimeException(e);
                 }
@@ -156,11 +158,11 @@ public final class MolangCompiler {
         scriptCtClass.addInterface(interfaceCtClass);
         scriptCtClass.setModifiers(Modifier.PUBLIC);
 
-        final Class<?> returnType = implementedMethod.getReturnType();
+        final Class<?> returnType = typeToken.resolveType(implementedMethod.getGenericReturnType()).getRawType();
         final CtClass returnCtType = JavassistUtil.getClassUnchecked(classPool, returnType);
 
         final Bytecode bytecode = new Bytecode(scriptCtClass.getClassFile().getConstPool());
-        final FunctionCompileState compileState = new FunctionCompileState(this, classPool, scriptCtClass, bytecode, implementedMethod, scope, argumentParameterIndexes);
+        final FunctionCompileState compileState = new FunctionCompileState(this, typeToken, classPool, scriptCtClass, bytecode, implementedMethod, scope, argumentParameterIndexes);
 
         // compute initial max locals
         {
@@ -190,10 +192,11 @@ public final class MolangCompiler {
             }
 
             if (lastVisitResult == null || !lastVisitResult.returned()) {
-                if (lastVisitResult == null || lastVisitResult.lastPushedType() != returnCtType) {
+                CtClass lastPushedType = lastVisitResult != null ? lastVisitResult.lastPushedType() : null;
+                if (lastPushedType == null || !JavassistUtil.isSubtypeOf(lastPushedType, returnCtType)) {
                     JavassistUtil.addCast(
                             bytecode,
-                            lastVisitResult == null ? CtClass.doubleType : lastVisitResult.lastPushedType(),
+                            lastPushedType == null ? CtClass.doubleType : lastPushedType,
                             returnCtType
                     );
                 }
@@ -204,7 +207,8 @@ public final class MolangCompiler {
 
         bytecode.setMaxLocals(compileState.maxLocals());
 
-        final MethodInfo method = new MethodInfo(scriptCtClass.getClassFile().getConstPool(), implementedMethod.getName(), Descriptor.ofMethod(returnCtType, ctParameters));
+        CtClass rawReturnCtType = JavassistUtil.getClassUnchecked(classPool, implementedMethod.getReturnType());
+        final MethodInfo method = new MethodInfo(scriptCtClass.getClassFile().getConstPool(), implementedMethod.getName(), Descriptor.ofMethod(rawReturnCtType, ctParameters));
         method.setAccessFlags(Modifier.PUBLIC | Modifier.FINAL);
         method.setCodeAttribute(bytecode.toCodeAttribute());
         final StackMapTable stackMapTable;
@@ -315,6 +319,6 @@ public final class MolangCompiler {
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new IllegalStateException("Couldn't instantiate script class", e);
         }
-        return clazz.cast(instance);
+        return (T) instance;
     }
 }

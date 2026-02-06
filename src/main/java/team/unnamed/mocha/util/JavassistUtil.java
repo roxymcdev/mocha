@@ -51,6 +51,18 @@ public class JavassistUtil {
         WRAPPER_TYPE_NAMES.add(Double.class.getName());
     }
 
+    public static boolean isSubtypeOf(final @NotNull CtClass subtype, final @NotNull CtClass supertype) {
+        try {
+            return subtype.subtypeOf(supertype);
+        } catch (NotFoundException e) {
+            return false;
+        }
+    }
+
+    public static boolean isPrimitiveOrWrapper(final @NotNull CtPrimitiveType primitiveType, final @NotNull CtClass type) {
+        return type.equals(primitiveType) || type.getName().equals(primitiveType.getWrapperName());
+    }
+
     public static @NotNull CtClass getClassUnchecked(final @NotNull ClassPool cp, final @NotNull Class<?> javaClass) {
         try {
             return cp.get(javaClass.getName());
@@ -112,9 +124,6 @@ public class JavassistUtil {
                         "valueOf",
                         "(" + fromPrimitive.getDescriptor() + ")L" + fromPrimitive.getWrapperName().replace('.', '/') + ";"
                 );
-
-                // wrapper to object
-                bytecode.addCheckcast(to);
             }
         } else {
             if (to.isPrimitive()) {

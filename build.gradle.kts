@@ -1,5 +1,5 @@
 plugins {
-    `java-library`
+    id("net.kyori.indra") version "4.0.0"
     id("net.kyori.indra.publishing") version "4.0.0"
     id("net.neoforged.licenser") version "0.7.5"
     id("me.champeau.jmh") version "0.7.2"
@@ -19,9 +19,13 @@ repositories {
 
 dependencies {
     api("org.javassist:javassist:3.30.2-GA")
+    api("com.google.guava:guava:31.1-jre")
     compileOnlyApi("org.jetbrains:annotations:24.1.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.3")
+
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // performance comparison with other libraries
     jmhImplementation("com.bedrockk:molang:1.0-SNAPSHOT")
@@ -35,10 +39,6 @@ tasks {
     test {
         dependsOn("generateExpectations")
     }
-    compileJmhJava {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
-    }
     javadoc {
         isFailOnError = false
     }
@@ -49,7 +49,7 @@ tasks {
 
 indra {
     javaVersions {
-        minimumToolchain(17)
+        target(17)
     }
 
     publishReleasesTo("roxymc", "https://repo.roxymc.net/releases")

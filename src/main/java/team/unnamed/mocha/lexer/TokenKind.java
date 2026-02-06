@@ -105,7 +105,7 @@ public enum TokenKind {
     BANG,
 
     /**
-     * Double ampersand token (&&)
+     * Double ampersand token (&amp;&amp;)
      */
     AMPAMP,
 
@@ -115,12 +115,12 @@ public enum TokenKind {
     BARBAR,
 
     /**
-     * Less-than token (<)
+     * Less-than token (&lt;)
      */
     LT,
 
     /**
-     * Less-than-or-equal token (<=)
+     * Less-than-or-equal token (&lt;=)
      */
     LTE,
 
