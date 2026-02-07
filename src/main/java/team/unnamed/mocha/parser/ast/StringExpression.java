@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 /**
@@ -39,7 +37,7 @@ public final class StringExpression implements Expression {
 
     private final String value;
 
-    public StringExpression(final @NotNull String value) {
+    public StringExpression(final String value) {
         this.value = Objects.requireNonNull(value, "value");
     }
 
@@ -49,12 +47,12 @@ public final class StringExpression implements Expression {
      * @return The string value.
      * @since 3.0.0
      */
-    public @NotNull String value() {
+    public String value() {
         return value;
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitString(this);
     }
     @Override

@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -41,7 +39,7 @@ public final class AccessExpression implements Expression {
     private final String property;
     private Expression object;
 
-    public AccessExpression(final @NotNull Expression object, final @NotNull String property) {
+    public AccessExpression(final Expression object, final String property) {
         this.object = requireNonNull(object, "object");
         this.property = requireNonNull(property, "property");
     }
@@ -53,7 +51,7 @@ public final class AccessExpression implements Expression {
      * @return The object expression.
      * @since 3.0.0
      */
-    public @NotNull Expression object() {
+    public Expression object() {
         return object;
     }
 
@@ -64,7 +62,7 @@ public final class AccessExpression implements Expression {
      * @param object The object expression.
      * @since 3.0.0
      */
-    public void object(final @NotNull Expression object) {
+    public void object(final Expression object) {
         this.object = requireNonNull(object, "object");
     }
 
@@ -74,12 +72,12 @@ public final class AccessExpression implements Expression {
      * @return The property name.
      * @since 3.0.0
      */
-    public @NotNull String property() {
+    public String property() {
         return property;
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitAccess(this);
     }
 

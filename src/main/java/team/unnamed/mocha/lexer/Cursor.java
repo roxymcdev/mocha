@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.lexer;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 /**
@@ -74,7 +72,7 @@ public final class Cursor implements Cloneable {
     }
 
     @Override
-    public @NotNull Cursor clone() {
+    public Cursor clone() {
         return new Cursor(line, column);
     }
 

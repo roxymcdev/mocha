@@ -23,15 +23,14 @@
  */
 package team.unnamed.mocha.runtime;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ast.Expression;
 import team.unnamed.mocha.runtime.value.Value;
 
-public interface ExecutionContext<T> {
+public interface ExecutionContext<T extends @Nullable Object> {
     T entity();
 
-    @Nullable Value eval(final @NotNull Expression expression);
+    @Nullable Value eval(final Expression expression);
 
     @Nullable Object flag();
 

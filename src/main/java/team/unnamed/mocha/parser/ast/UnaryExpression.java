@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -42,7 +40,7 @@ public final class UnaryExpression implements Expression {
     private final Op op;
     private Expression expression;
 
-    public UnaryExpression(final @NotNull Op op, final @NotNull Expression expression) {
+    public UnaryExpression(final Op op, final Expression expression) {
         this.op = requireNonNull(op, "op");
         this.expression = requireNonNull(expression, "expression");
     }
@@ -53,7 +51,7 @@ public final class UnaryExpression implements Expression {
      * @return The unary expression operation.
      * @since 3.0.0
      */
-    public @NotNull Op op() {
+    public Op op() {
         return op;
     }
 
@@ -63,7 +61,7 @@ public final class UnaryExpression implements Expression {
      * @return The operated expression.
      * @since 3.0.0
      */
-    public @NotNull Expression expression() {
+    public Expression expression() {
         return expression;
     }
 
@@ -73,12 +71,12 @@ public final class UnaryExpression implements Expression {
      * @param expression The operated expression.
      * @since 3.0.0
      */
-    public void expression(final @NotNull Expression expression) {
+    public void expression(final Expression expression) {
         this.expression = requireNonNull(expression, "expression");
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitUnary(this);
     }
 

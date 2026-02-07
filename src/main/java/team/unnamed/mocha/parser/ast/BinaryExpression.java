@@ -24,7 +24,6 @@
 package team.unnamed.mocha.parser.ast;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +41,7 @@ public final class BinaryExpression implements Expression {
     private Expression left;
     private Expression right;
 
-    public BinaryExpression(final @NotNull Op op, final @NotNull Expression left, final @NotNull Expression right) {
+    public BinaryExpression(final Op op, final Expression left, final Expression right) {
         this.op = requireNonNull(op, "op");
         this.left = requireNonNull(left, "left");
         this.right = requireNonNull(right, "right");
@@ -54,7 +53,7 @@ public final class BinaryExpression implements Expression {
      * @return The expression operation.
      * @since 3.0.0
      */
-    public @NotNull Op op() {
+    public Op op() {
         return op;
     }
 
@@ -65,7 +64,7 @@ public final class BinaryExpression implements Expression {
      * @return The left-hand expression
      * @since 3.0.0
      */
-    public @NotNull Expression left() {
+    public Expression left() {
         return left;
     }
 
@@ -76,7 +75,7 @@ public final class BinaryExpression implements Expression {
      * @param left The left-hand expression
      * @since 3.0.0
      */
-    public void left(final @NotNull Expression left) {
+    public void left(final Expression left) {
         this.left = requireNonNull(left, "left");
     }
 
@@ -87,7 +86,7 @@ public final class BinaryExpression implements Expression {
      * @return The right-hand expression
      * @since 3.0.0
      */
-    public @NotNull Expression right() {
+    public Expression right() {
         return right;
     }
 
@@ -98,12 +97,12 @@ public final class BinaryExpression implements Expression {
      * @param right The right-hand expression
      * @since 3.0.0
      */
-    public void right(final @NotNull Expression right) {
+    public void right(final Expression right) {
         this.right = requireNonNull(right, "right");
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitBinary(this);
     }
 

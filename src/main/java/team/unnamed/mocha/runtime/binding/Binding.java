@@ -23,13 +23,7 @@
  */
 package team.unnamed.mocha.runtime.binding;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Gives a name to a type (class, interface, enum), method or field
@@ -77,7 +71,7 @@ public @interface Binding {
      * @return The names for this binding.
      * @since 3.0.0
      */
-    @NotNull String[] value();
+    String[] value();
 
     /**
      * Returns whether this binding should be skipped

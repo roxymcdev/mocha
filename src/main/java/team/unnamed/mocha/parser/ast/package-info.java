@@ -33,4 +33,7 @@
  *
  * @since 3.0.0
  */
+@NullMarked
 package team.unnamed.mocha.parser.ast;
+
+import org.jspecify.annotations.NullMarked;

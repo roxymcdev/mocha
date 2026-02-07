@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ast.*;
 import team.unnamed.mocha.runtime.value.Function;
 import team.unnamed.mocha.runtime.value.ObjectProperty;
@@ -37,45 +36,45 @@ import team.unnamed.mocha.runtime.value.Value;
  *
  * @since 3.0.0
  */
-public final class IsConstantExpression implements ExpressionVisitor<@NotNull Boolean> {
+public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     private static final ExpressionVisitor<Boolean> INSTANCE = new IsConstantExpression(null);
 
-    private final ExpressionInterpreter<?> evaluator;
-    private final ObjectValue scope;
+    private final @Nullable ExpressionInterpreter<?> evaluator;
+    private final @Nullable ObjectValue scope;
 
     private IsConstantExpression(final @Nullable Scope scope) {
         this.evaluator = scope == null ? null : new ExpressionInterpreter<>(null, scope);
         this.scope = scope;
     }
 
-    public static boolean test(final @NotNull Expression expression) {
+    public static boolean test(final Expression expression) {
         return expression.visit(INSTANCE);
     }
 
-    public static boolean test(final @NotNull Expression expression, final @NotNull Scope scope) {
+    public static boolean test(final Expression expression, final Scope scope) {
         return expression.visit(new IsConstantExpression(scope));
     }
 
     @Override
-    public @NotNull Boolean visitArrayAccess(final @NotNull ArrayAccessExpression expression) {
+    public Boolean visitArrayAccess(final ArrayAccessExpression expression) {
         // array access is constant if the array and the index are constants
         return expression.array().visit(this) && expression.index().visit(this);
     }
 
     @Override
-    public @NotNull Boolean visitDouble(final @NotNull DoubleExpression expression) {
+    public Boolean visitDouble(final DoubleExpression expression) {
         // literals are constants
         return true;
     }
 
     @Override
-    public @NotNull Boolean visitString(final @NotNull StringExpression expression) {
+    public Boolean visitString(final StringExpression expression) {
         // literals are constants
         return true;
     }
 
     @Override
-    public @NotNull Boolean visitIdentifier(final @NotNull IdentifierExpression expression) {
+    public Boolean visitIdentifier(final IdentifierExpression expression) {
         if (scope == null) {
             // scope not given, can't know if it's constant or not
             return false;
@@ -92,7 +91,7 @@ public final class IsConstantExpression implements ExpressionVisitor<@NotNull Bo
     }
 
     @Override
-    public @NotNull Boolean visitTernaryConditional(final @NotNull TernaryConditionalExpression expression) {
+    public Boolean visitTernaryConditional(final TernaryConditionalExpression expression) {
         // ternary conditional is only constant if all of its parts are constant
         return expression.condition().visit(this)
                 && expression.trueExpression().visit(this)
@@ -100,13 +99,13 @@ public final class IsConstantExpression implements ExpressionVisitor<@NotNull Bo
     }
 
     @Override
-    public @NotNull Boolean visitUnary(final @NotNull UnaryExpression expression) {
+    public Boolean visitUnary(final UnaryExpression expression) {
         // unary expressions are constant if their expression is constant
         return expression.expression().visit(this);
     }
 
     @Override
-    public @NotNull Boolean visitExecutionScope(final @NotNull ExecutionScopeExpression expression) {
+    public Boolean visitExecutionScope(final ExecutionScopeExpression expression) {
         // execution scopes are constant if all of their expressions are constant
         for (final Expression expr : expression.expressions()) {
             if (!expr.visit(this)) {
@@ -117,13 +116,13 @@ public final class IsConstantExpression implements ExpressionVisitor<@NotNull Bo
     }
 
     @Override
-    public @NotNull Boolean visitBinary(final @NotNull BinaryExpression expression) {
+    public Boolean visitBinary(final BinaryExpression expression) {
         // binary expressions are constant if both of their expressions are constant
         return expression.left().visit(this) && expression.right().visit(this);
     }
 
     @Override
-    public @NotNull Boolean visitAccess(final @NotNull AccessExpression expression) {
+    public Boolean visitAccess(final AccessExpression expression) {
         final Expression objectExpr = expression.object();
 
         if (!objectExpr.visit(this)) {
@@ -152,7 +151,7 @@ public final class IsConstantExpression implements ExpressionVisitor<@NotNull Bo
     }
 
     @Override
-    public @NotNull Boolean visitCall(final @NotNull CallExpression expression) {
+    public Boolean visitCall(final CallExpression expression) {
         for (final Expression argument : expression.arguments()) {
             if (!argument.visit(this)) {
                 // non-constant argument indicates non-constant call
@@ -194,13 +193,13 @@ public final class IsConstantExpression implements ExpressionVisitor<@NotNull Bo
     }
 
     @Override
-    public @NotNull Boolean visitStatement(final @NotNull StatementExpression expression) {
+    public Boolean visitStatement(final StatementExpression expression) {
         // statements are constants
         return true;
     }
 
     @Override
-    public @NotNull Boolean visit(final @NotNull Expression expression) {
+    public Boolean visit(final Expression expression) {
         // can't know if they are constant or not
         return false;
     }

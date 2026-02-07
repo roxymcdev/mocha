@@ -31,4 +31,7 @@
  *
  * @since 3.0.0
  */
+@NullMarked
 package team.unnamed.mocha.lexer;
+
+import org.jspecify.annotations.NullMarked;

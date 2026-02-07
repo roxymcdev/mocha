@@ -28,7 +28,6 @@ import javassist.CtClass;
 import javassist.CtPrimitiveType;
 import javassist.NotFoundException;
 import javassist.bytecode.Bytecode;
-import org.jetbrains.annotations.NotNull;
 import team.unnamed.mocha.runtime.TypeCastException;
 
 import java.util.HashSet;
@@ -51,7 +50,7 @@ public class JavassistUtil {
         WRAPPER_TYPE_NAMES.add(Double.class.getName());
     }
 
-    public static boolean isSubtypeOf(final @NotNull CtClass subtype, final @NotNull CtClass supertype) {
+    public static boolean isSubtypeOf(final CtClass subtype, final CtClass supertype) {
         try {
             return subtype.subtypeOf(supertype);
         } catch (NotFoundException e) {
@@ -59,11 +58,11 @@ public class JavassistUtil {
         }
     }
 
-    public static boolean isPrimitiveOrWrapper(final @NotNull CtPrimitiveType primitiveType, final @NotNull CtClass type) {
+    public static boolean isPrimitiveOrWrapper(final CtPrimitiveType primitiveType, final CtClass type) {
         return type.equals(primitiveType) || type.getName().equals(primitiveType.getWrapperName());
     }
 
-    public static @NotNull CtClass getClassUnchecked(final @NotNull ClassPool cp, final @NotNull Class<?> javaClass) {
+    public static CtClass getClassUnchecked(final ClassPool cp, final Class<?> javaClass) {
         try {
             return cp.get(javaClass.getName());
         } catch (final NotFoundException e) {
@@ -71,17 +70,17 @@ public class JavassistUtil {
         }
     }
 
-    public static boolean isWrapper(final @NotNull CtClass type) {
+    public static boolean isWrapper(final CtClass type) {
         requireNonNull(type, "type");
         return WRAPPER_TYPE_NAMES.contains(type.getName());
     }
 
-    public static boolean isPrimitiveOrWrapper(final @NotNull CtClass type) {
+    public static boolean isPrimitiveOrWrapper(final CtClass type) {
         requireNonNull(type, "type");
         return type.isPrimitive() || isWrapper(type);
     }
 
-    public static void addCast(final @NotNull Bytecode bytecode, final @NotNull CtClass from, final @NotNull CtClass to) {
+    public static void addCast(final Bytecode bytecode, final CtClass from, final CtClass to) {
         requireNonNull(bytecode, "bytecode");
         requireNonNull(from, "from");
         requireNonNull(to, "to");
@@ -146,7 +145,7 @@ public class JavassistUtil {
         }
     }
 
-    public static void addCastIntTo(final @NotNull Bytecode bytecode, final @NotNull CtClass to) {
+    public static void addCastIntTo(final Bytecode bytecode, final CtClass to) {
         requireNonNull(bytecode, "bytecode");
         requireNonNull(to, "to");
 
@@ -200,7 +199,7 @@ public class JavassistUtil {
         }
     }
 
-    public static void addCastDoubleTo(final @NotNull Bytecode bytecode, final @NotNull CtClass to) {
+    public static void addCastDoubleTo(final Bytecode bytecode, final CtClass to) {
         requireNonNull(bytecode, "bytecode");
         requireNonNull(to, "to");
 
@@ -235,7 +234,7 @@ public class JavassistUtil {
         }
     }
 
-    public static void addCastLongTo(final @NotNull Bytecode bytecode, final @NotNull CtClass to) {
+    public static void addCastLongTo(final Bytecode bytecode, final CtClass to) {
         requireNonNull(bytecode, "bytecode");
         requireNonNull(to, "to");
 
@@ -270,7 +269,7 @@ public class JavassistUtil {
         }
     }
 
-    public static void addCastFloatTo(final @NotNull Bytecode bytecode, final @NotNull CtClass to) {
+    public static void addCastFloatTo(final Bytecode bytecode, final CtClass to) {
         requireNonNull(bytecode, "bytecode");
         requireNonNull(to, "to");
 

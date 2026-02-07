@@ -23,28 +23,27 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 public final class StringValue implements Value {
     private final String value;
 
-    private StringValue(final @NotNull String value) {
+    private StringValue(final String value) {
         this.value = requireNonNull(value, "value");
     }
 
-    public static @NotNull StringValue of(final @NotNull String value) {
+    public static StringValue of(final String value) {
         return new StringValue(value);
     }
 
-    public @NotNull String value() {
+    public String value() {
         return value;
     }
 
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return "StringValue(\"" + value + "\")";
     }
 

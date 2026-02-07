@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
 
 import java.util.Map;
@@ -42,7 +41,7 @@ public class MutableObjectBinding implements ObjectValue {
     private boolean blocked = false;
 
     @Override
-    public @Nullable ObjectProperty getProperty(final @NotNull String name) {
+    public @Nullable ObjectProperty getProperty(final String name) {
         return properties.get(name);
     }
 
@@ -52,7 +51,7 @@ public class MutableObjectBinding implements ObjectValue {
      * may not be supported
      */
     @Override
-    public boolean set(final @NotNull String name, final @Nullable Value value) {
+    public boolean set(final String name, final @Nullable Value value) {
         if (blocked) {
             return false;
         }

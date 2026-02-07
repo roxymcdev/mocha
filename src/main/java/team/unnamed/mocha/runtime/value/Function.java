@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ast.Expression;
 import team.unnamed.mocha.runtime.ExecutionContext;
 import team.unnamed.mocha.runtime.ExpressionInterpreter;
@@ -41,7 +40,7 @@ import team.unnamed.mocha.runtime.ExpressionInterpreter;
  * @since 3.0.0
  */
 @FunctionalInterface
-public interface Function<T> extends Value {
+public non-sealed interface Function<T extends @Nullable Object> extends Value {
     /**
      * Executes this function with the given arguments.
      *
@@ -50,7 +49,7 @@ public interface Function<T> extends Value {
      * @return The function result
      * @since 3.0.0
      */
-    @Nullable Value evaluate(final @NotNull ExecutionContext<T> context, final @NotNull Arguments arguments);
+    @Nullable Value evaluate(final ExecutionContext<T> context, final Arguments arguments);
 
     /**
      * Executes this function.
@@ -59,7 +58,7 @@ public interface Function<T> extends Value {
      * @return The function result
      * @since 3.0.0
      */
-    default @Nullable Value evaluate(final @NotNull ExecutionContext<T> context) {
+    default @Nullable Value evaluate(final ExecutionContext<T> context) {
         return evaluate(context, Arguments.empty());
     }
 
@@ -90,7 +89,7 @@ public interface Function<T> extends Value {
      * @since 3.0.0
      */
     interface Arguments {
-        static @NotNull Arguments empty() {
+        static Arguments empty() {
             return ExpressionInterpreter.FunctionArguments.EMPTY;
         }
 
@@ -102,7 +101,7 @@ public interface Function<T> extends Value {
          *
          * @return The next argument.
          */
-        @NotNull Argument next();
+        Argument next();
 
         /**
          * Gets the amount of arguments.

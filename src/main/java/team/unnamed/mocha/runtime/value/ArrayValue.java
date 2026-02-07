@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -33,24 +32,24 @@ import static java.util.Objects.requireNonNull;
 public final class ArrayValue implements Value {
     private final Value[] values;
 
-    private ArrayValue(final @NotNull Value @NotNull ... values) {
+    private ArrayValue(final Value ... values) {
         this.values = requireNonNull(values, "values");
     }
 
-    public static @NotNull ArrayValue of(final @NotNull Value @NotNull ... values) {
+    public static ArrayValue of(final Value ... values) {
         return new ArrayValue(values);
     }
 
-    public @NotNull Value @NotNull [] values() {
+    public Value [] values() {
         return values;
     }
 
-    public @NotNull Value get(final Value index) {
+    public Value get(final Value index) {
         return values[(int) index.getAsNumber()];
     }
 
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return "ArrayValue[" + Arrays.toString(values) + "]";
     }
 

@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 /**
@@ -42,7 +40,7 @@ public final class IdentifierExpression implements Expression {
 
     private final String name;
 
-    public IdentifierExpression(final @NotNull String name) {
+    public IdentifierExpression(final String name) {
         Objects.requireNonNull(name, "name");
 
         this.name = name.toLowerCase(); // case-insensitive
@@ -54,12 +52,12 @@ public final class IdentifierExpression implements Expression {
      * @return The identifier name.
      * @since 3.0.0
      */
-    public @NotNull String name() {
+    public String name() {
         return name;
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitIdentifier(this);
     }
 

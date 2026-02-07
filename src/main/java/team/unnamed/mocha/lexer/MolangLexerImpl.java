@@ -23,7 +23,7 @@
  */
 package team.unnamed.mocha.lexer;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -41,20 +41,20 @@ final class MolangLexerImpl implements MolangLexer {
     private int next;
 
     // the current token
-    private Token token = null;
+    private @Nullable Token token = null;
 
-    MolangLexerImpl(final @NotNull Reader reader) throws IOException {
+    MolangLexerImpl(final Reader reader) throws IOException {
         this.reader = requireNonNull(reader, "reader");
         this.next = reader.read();
     }
 
     @Override
-    public @NotNull Cursor cursor() {
+    public Cursor cursor() {
         return cursor;
     }
 
     @Override
-    public @NotNull Token current() {
+    public Token current() {
         if (token == null) {
             throw new IllegalStateException("No current token, please call next() at least once");
         }
@@ -62,7 +62,7 @@ final class MolangLexerImpl implements MolangLexer {
     }
 
     @Override
-    public @NotNull Token next() throws IOException {
+    public Token next() throws IOException {
         return token = next0();
     }
 
@@ -71,7 +71,7 @@ final class MolangLexerImpl implements MolangLexer {
         this.reader.close();
     }
 
-    private @NotNull Token next0() throws IOException {
+    private Token next0() throws IOException {
         int c = next;
         if (c == -1) {
             // EOF reached

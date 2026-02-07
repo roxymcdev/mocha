@@ -23,9 +23,7 @@
  */
 package team.unnamed.mocha.lexer;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnknownNullability;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -45,7 +43,7 @@ public final class Token {
     private final int end;
 
     public Token(
-            final @NotNull TokenKind kind,
+            final TokenKind kind,
             final @Nullable String value,
             final int start,
             final int end
@@ -68,7 +66,7 @@ public final class Token {
      * @return The token kind
      * @since 3.0.0
      */
-    public @NotNull TokenKind kind() {
+    public TokenKind kind() {
         return kind;
     }
 
@@ -79,8 +77,12 @@ public final class Token {
      * @return The token value
      * @since 3.0.0
      */
-    public @UnknownNullability String value() {
+    public @Nullable String valueOrNull() {
         return value;
+    }
+
+    public String value() {
+        return Objects.requireNonNull(value, "Token of kind %s doesn't provide a value".formatted(kind));
     }
 
     /**

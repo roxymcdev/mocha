@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The expression interface. It's the super-interface for
@@ -38,8 +37,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @since 3.0.0
  */
-@ApiStatus.NonExtendable
-public interface Expression {
+public sealed interface Expression permits AccessExpression, ArrayAccessExpression, BinaryExpression, CallExpression, DoubleExpression, ExecutionScopeExpression, IdentifierExpression, StatementExpression, StringExpression, TernaryConditionalExpression, UnaryExpression {
 
     /**
      * Visits this expression with the given visitor.
@@ -49,6 +47,6 @@ public interface Expression {
      * @return The visit result
      * @since 3.0.0
      */
-    <R> R visit(final @NotNull ExpressionVisitor<R> visitor);
+    <R extends @Nullable Object> R visit(final ExpressionVisitor<R> visitor);
 
 }

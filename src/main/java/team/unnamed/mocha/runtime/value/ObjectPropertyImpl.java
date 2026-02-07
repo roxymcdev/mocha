@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,13 +31,13 @@ final class ObjectPropertyImpl implements ObjectProperty {
     private final Value value;
     private final boolean constant;
 
-    ObjectPropertyImpl(final @NotNull Value value, final boolean constant) {
+    ObjectPropertyImpl(final Value value, final boolean constant) {
         this.value = requireNonNull(value, "value");
         this.constant = constant;
     }
 
     @Override
-    public @NotNull Value value() {
+    public Value value() {
         return value;
     }
 
@@ -48,7 +47,7 @@ final class ObjectPropertyImpl implements ObjectProperty {
     }
 
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return "ObjectProperty(" + value + "(" + (constant ? "constant" : "variable") + "))";
     }
 

@@ -20,6 +20,7 @@ repositories {
 dependencies {
     api("org.javassist:javassist:3.30.2-GA")
     api("com.google.guava:guava:31.1-jre")
+    api("org.jspecify:jspecify:1.0.0")
     compileOnlyApi("org.jetbrains:annotations:24.1.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.3"))

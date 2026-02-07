@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 /**
@@ -56,7 +54,7 @@ public final class DoubleExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitDouble(this);
     }
 

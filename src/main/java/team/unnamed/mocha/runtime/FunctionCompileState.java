@@ -27,7 +27,6 @@ import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.bytecode.Bytecode;
-import org.jetbrains.annotations.NotNull;
 import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
 
 import java.lang.reflect.Method;
@@ -69,39 +68,39 @@ final class FunctionCompileState {
         this.argumentParameterIndexes = requireNonNull(argumentParameterIndexes, "argumentParameterIndexes");
     }
 
-    public @NotNull MolangCompiler compiler() {
+    public MolangCompiler compiler() {
         return compiler;
     }
 
-    public @NotNull TypeToken<?> typeToken() {
+    public TypeToken<?> typeToken() {
         return typeToken;
     }
 
-    public @NotNull ClassPool classPool() {
+    public ClassPool classPool() {
         return classPool;
     }
 
-    public @NotNull CtClass type() {
+    public CtClass type() {
         return ctClass;
     }
 
-    public @NotNull Bytecode bytecode() {
+    public Bytecode bytecode() {
         return bytecode;
     }
 
-    public @NotNull Method method() {
+    public Method method() {
         return method;
     }
 
-    public @NotNull Map<String, Object> requirements() {
+    public Map<String, Object> requirements() {
         return requirements;
     }
 
-    public @NotNull Scope scope() {
+    public Scope scope() {
         return scope;
     }
 
-    public @NotNull Map<String, Integer> argumentParameterIndexes() {
+    public Map<String, Integer> argumentParameterIndexes() {
         return argumentParameterIndexes;
     }
 

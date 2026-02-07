@@ -24,16 +24,15 @@
 package team.unnamed.mocha.runtime.value;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Map;
 import java.util.StringJoiner;
 
 @ApiStatus.NonExtendable
-public /* sealed */ interface Value /* permits Function, ObjectValue, ArrayValue, NumberValue, StringValue */ {
-    static @NotNull Value of(final @Nullable Object any) {
+public sealed interface Value permits ArrayValue, Function, JavaValue, NumberValue, ObjectValue, StringValue {
+    static Value of(final @Nullable Object any) {
         if (any instanceof Value) {
             return (Value) any;
         } else if (any instanceof Number) {
@@ -57,19 +56,19 @@ public /* sealed */ interface Value /* permits Function, ObjectValue, ArrayValue
         }
     }
 
-    static @NotNull Value of(final boolean bool) {
+    static Value of(final boolean bool) {
         return bool ? NumberValue.of(1D) : NumberValue.zero();
     }
 
-    static @NotNull Value of(final double _double) {
+    static Value of(final double _double) {
         return NumberValue.of(_double);
     }
 
-    static @NotNull Value of(final @Nullable String string) {
+    static Value of(final @Nullable String string) {
         return string == null ? nil() : StringValue.of(string);
     }
 
-    static @NotNull Value nil() {
+    static Value nil() {
         return NumberValue.zero();
     }
 
@@ -99,7 +98,7 @@ public /* sealed */ interface Value /* permits Function, ObjectValue, ArrayValue
         return this instanceof StringValue;
     }
 
-    default @NotNull String getAsString() {
+    default String getAsString() {
         if (this instanceof StringValue) {
             return ((StringValue) this).value();
         } else if (this instanceof NumberValue) {

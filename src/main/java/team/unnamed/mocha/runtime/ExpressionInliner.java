@@ -23,27 +23,21 @@
  */
 package team.unnamed.mocha.runtime;
 
-import org.jetbrains.annotations.NotNull;
-import team.unnamed.mocha.parser.ast.BinaryExpression;
-import team.unnamed.mocha.parser.ast.CallExpression;
-import team.unnamed.mocha.parser.ast.DoubleExpression;
-import team.unnamed.mocha.parser.ast.Expression;
-import team.unnamed.mocha.parser.ast.ExpressionVisitor;
-import team.unnamed.mocha.parser.ast.TernaryConditionalExpression;
+import team.unnamed.mocha.parser.ast.*;
 
 import static java.util.Objects.requireNonNull;
 
-final class ExpressionInliner implements ExpressionVisitor<@NotNull Expression> {
+final class ExpressionInliner implements ExpressionVisitor<Expression> {
     private final ExpressionInterpreter<?> interpreter;
     private final Scope scope;
 
-    ExpressionInliner(final @NotNull ExpressionInterpreter<?> interpreter, final @NotNull Scope scope) {
+    ExpressionInliner(final ExpressionInterpreter<?> interpreter, final Scope scope) {
         this.interpreter = requireNonNull(interpreter, "interpreter");
         this.scope = requireNonNull(scope, "scope");
     }
 
     @Override
-    public @NotNull Expression visitBinary(final @NotNull BinaryExpression expression) {
+    public Expression visitBinary(final BinaryExpression expression) {
         if (IsConstantExpression.test(expression, scope)) {
             // can be evaluated in compile-time
             return new DoubleExpression(expression.visit(interpreter).getAsNumber());
@@ -52,7 +46,7 @@ final class ExpressionInliner implements ExpressionVisitor<@NotNull Expression> 
     }
 
     @Override
-    public @NotNull Expression visitTernaryConditional(final @NotNull TernaryConditionalExpression expression) {
+    public Expression visitTernaryConditional(final TernaryConditionalExpression expression) {
         final Expression conditionExpr = expression.condition();
         final Expression trueExpr = expression.trueExpression();
         final Expression falseExpr = expression.falseExpression();
@@ -68,7 +62,7 @@ final class ExpressionInliner implements ExpressionVisitor<@NotNull Expression> 
     }
 
     @Override
-    public @NotNull Expression visitCall(final @NotNull CallExpression expression) {
+    public Expression visitCall(final CallExpression expression) {
         if (IsConstantExpression.test(expression, scope)) {
             // can be evaluated in compile-time
             return new DoubleExpression(expression.visit(interpreter).getAsNumber());
@@ -77,7 +71,7 @@ final class ExpressionInliner implements ExpressionVisitor<@NotNull Expression> 
     }
 
     @Override
-    public @NotNull Expression visit(final @NotNull Expression expression) {
+    public Expression visit(final Expression expression) {
         return expression;
     }
 }

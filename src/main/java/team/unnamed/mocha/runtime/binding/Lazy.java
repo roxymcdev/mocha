@@ -23,6 +23,8 @@
  */
 package team.unnamed.mocha.runtime.binding;
 
-public interface Lazy<T> {
+import org.jspecify.annotations.Nullable;
+
+public interface Lazy<T extends @Nullable Object> {
     T get();
 }

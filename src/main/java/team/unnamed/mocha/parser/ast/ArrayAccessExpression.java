@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,7 +40,7 @@ public final class ArrayAccessExpression implements Expression {
     private Expression array;
     private Expression index;
 
-    public ArrayAccessExpression(final @NotNull Expression array, final @NotNull Expression index) {
+    public ArrayAccessExpression(final Expression array, final Expression index) {
         this.array = requireNonNull(array, "array");
         this.index = requireNonNull(index, "index");
     }
@@ -53,7 +52,7 @@ public final class ArrayAccessExpression implements Expression {
      * @return The array expression.
      * @since 3.0.0
      */
-    public @NotNull Expression array() {
+    public Expression array() {
         return array;
     }
 
@@ -64,7 +63,7 @@ public final class ArrayAccessExpression implements Expression {
      * @param array The new array expression.
      * @since 3.0.0
      */
-    public void array(final @NotNull Expression array) {
+    public void array(final Expression array) {
         this.array = requireNonNull(array, "array");
     }
 
@@ -75,7 +74,7 @@ public final class ArrayAccessExpression implements Expression {
      * @return The index expression.
      * @since 3.0.0
      */
-    public @NotNull Expression index() {
+    public Expression index() {
         return index;
     }
 
@@ -86,17 +85,17 @@ public final class ArrayAccessExpression implements Expression {
      * @param index The new index expression.
      * @since 3.0.0
      */
-    public void index(final @NotNull Expression index) {
+    public void index(final Expression index) {
         this.index = requireNonNull(index, "index");
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitArrayAccess(this);
     }
 
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return "ArrayAccess(" + array + ", " + index + ")";
     }
 

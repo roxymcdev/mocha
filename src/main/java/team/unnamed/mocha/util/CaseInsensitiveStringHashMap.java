@@ -23,15 +23,9 @@
  */
 package team.unnamed.mocha.util;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,9 +41,9 @@ import java.util.function.Function;
  * @see HashMap
  * @since 3.0.0
  */
-public class CaseInsensitiveStringHashMap<V> extends HashMap<String, V> {
-    private Set<String> keySet;
-    private Set<Map.Entry<String, V>> entrySet;
+public class CaseInsensitiveStringHashMap<V extends @Nullable Object> extends HashMap<String, V> {
+    private @Nullable Set<String> keySet;
+    private @Nullable Set<Map.Entry<String, V>> entrySet;
 
     public CaseInsensitiveStringHashMap(int initialCapacity, float loadFactor) {
         super(initialCapacity, loadFactor);
@@ -71,7 +65,7 @@ public class CaseInsensitiveStringHashMap<V> extends HashMap<String, V> {
         return key instanceof String ? ((T) ((String) key).toLowerCase()) : key;
     }
 
-    private static <V> Map<? extends String, ? extends V> lowercaseMap(Map<? extends String, ? extends V> m) {
+    private static <V extends @Nullable Object> Map<? extends String, ? extends V> lowercaseMap(Map<? extends String, ? extends V> m) {
         final Map<String, V> lowercased = new HashMap<>();
         for (Entry<? extends String, ? extends V> entry : m.entrySet()) {
             lowercased.put(lowercase(entry.getKey()), entry.getValue());
@@ -146,22 +140,22 @@ public class CaseInsensitiveStringHashMap<V> extends HashMap<String, V> {
     }
 
     @Override
-    public V computeIfAbsent(String key, @NotNull Function<? super String, ? extends V> mappingFunction) {
+    public V computeIfAbsent(String key, Function<? super String, ? extends V> mappingFunction) {
         return super.computeIfAbsent(lowercase(key), mappingFunction);
     }
 
     @Override
-    public V computeIfPresent(String key, @NotNull BiFunction<? super String, ? super V, ? extends V> remappingFunction) {
+    public @Nullable V computeIfPresent(String key, BiFunction<? super String, ? super V, ? extends V> remappingFunction) {
         return super.computeIfPresent(lowercase(key), remappingFunction);
     }
 
     @Override
-    public V compute(String key, @NotNull BiFunction<? super String, ? super V, ? extends V> remappingFunction) {
+    public V compute(String key, BiFunction<? super String, ? super V, ? extends V> remappingFunction) {
         return super.compute(lowercase(key), remappingFunction);
     }
 
     @Override
-    public V merge(String key, @NotNull V value, @NotNull BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+    public V merge(String key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         return super.merge(lowercase(key), value, remappingFunction);
     }
 
@@ -183,7 +177,7 @@ public class CaseInsensitiveStringHashMap<V> extends HashMap<String, V> {
         }
 
         @Override
-        public @NotNull Iterator<String> iterator() {
+        public Iterator<String> iterator() {
             return internalkeySet.iterator();
         }
 
@@ -203,7 +197,7 @@ public class CaseInsensitiveStringHashMap<V> extends HashMap<String, V> {
         }
 
         @Override
-        public Object @NotNull [] toArray() {
+        public Object [] toArray() {
             return internalkeySet.toArray();
         }
 
@@ -231,7 +225,7 @@ public class CaseInsensitiveStringHashMap<V> extends HashMap<String, V> {
         }
 
         @Override
-        public @NotNull Iterator<Map.Entry<String, V>> iterator() {
+        public Iterator<Map.Entry<String, V>> iterator() {
             return internalEntrySet.iterator();
         }
 

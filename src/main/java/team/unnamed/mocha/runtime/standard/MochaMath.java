@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime.standard;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.binding.BindExternalFunction;
 import team.unnamed.mocha.runtime.binding.Binding;
 import team.unnamed.mocha.runtime.value.NumberValue;
@@ -214,7 +213,7 @@ public final class MochaMath implements ObjectValue {
     }
 
     @Override
-    public @Nullable ObjectProperty getProperty(final @NotNull String name) {
+    public @Nullable ObjectProperty getProperty(final String name) {
         return entries.get(name);
     }
 }

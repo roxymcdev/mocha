@@ -23,13 +23,14 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
 
-public interface ObjectValue extends Value {
+import static java.util.Objects.requireNonNull;
+
+public non-sealed interface ObjectValue extends Value {
     /**
      * Returns the property for the given name ignoring
      * its case. This method is CASE-INSENSITIVE.
@@ -38,7 +39,7 @@ public interface ObjectValue extends Value {
      * @return The property for the given name
      * @since 3.0.0
      */
-    @Nullable ObjectProperty getProperty(final @NotNull String name);
+    @Nullable ObjectProperty getProperty(final String name);
 
     /**
      * Gets the value of the specified property,
@@ -49,7 +50,7 @@ public interface ObjectValue extends Value {
      * @return The value of the property
      * @since 3.0.0
      */
-    default @NotNull Value get(final @NotNull String name) {
+    default Value get(final String name) {
         final ObjectProperty property = getProperty(name);
         if (property == null) {
             return Value.nil();
@@ -58,25 +59,34 @@ public interface ObjectValue extends Value {
         }
     }
 
-    default boolean set(final @NotNull String name, final @Nullable Value value) {
+    default boolean set(final String name, final @Nullable Value value) {
         return false;
     }
 
-    default @NotNull Map<String, ObjectProperty> entries() {
+    default Map<String, ObjectProperty> entries() {
         return Collections.emptyMap();
     }
 
     // :) overloads
-    default void setFunction(final @NotNull String name, final @NotNull DoubleFunction1 function) {
-        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(args.next().eval().getAsNumber())));
+    default void setFunction(final String name, final DoubleFunction1 function) {
+        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(
+                requireNonNull(args.next().eval(), "arg 0").getAsNumber())
+        ));
     }
 
-    default void setFunction(final @NotNull String name, final @NotNull DoubleFunction2 function) {
-        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(args.next().eval().getAsNumber(), args.next().eval().getAsNumber())));
+    default void setFunction(final String name, final DoubleFunction2 function) {
+        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(
+                requireNonNull(args.next().eval(), "arg 0").getAsNumber(),
+                requireNonNull(args.next().eval(), "arg 1").getAsNumber())
+        ));
     }
 
-    default void setFunction(final @NotNull String name, final @NotNull DoubleFunction3 function) {
-        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(args.next().eval().getAsNumber(), args.next().eval().getAsNumber(), args.next().eval().getAsNumber())));
+    default void setFunction(final String name, final DoubleFunction3 function) {
+        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(
+                requireNonNull(args.next().eval(), "arg 0").getAsNumber(),
+                requireNonNull(args.next().eval(), "arg 1").getAsNumber(),
+                requireNonNull(args.next().eval(), "arg 2").getAsNumber())
+        ));
     }
 
     interface DoubleFunction1 {

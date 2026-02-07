@@ -24,10 +24,10 @@
 package team.unnamed.mocha.runtime;
 
 import javassist.CtClass;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 final class CompileVisitResult {
-    private final CtClass lastPushedType;
+    private final @Nullable CtClass lastPushedType;
     private final boolean returned;
 
     public CompileVisitResult(final @Nullable CtClass lastPushedType, final boolean returned) {

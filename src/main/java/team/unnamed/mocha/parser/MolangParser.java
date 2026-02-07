@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.parser;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.lexer.Cursor;
 import team.unnamed.mocha.lexer.MolangLexer;
 import team.unnamed.mocha.lexer.TokenKind;
@@ -48,7 +47,7 @@ import java.util.List;
  *
  * @since 3.0.0
  */
-public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extends Closeable {
+public sealed interface MolangParser extends Closeable permits MolangParserImpl {
 
     /**
      * Returns the internal lexer being used.
@@ -56,7 +55,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @return The lexer for this parser.
      * @since 3.0.0
      */
-    @NotNull MolangLexer lexer();
+    MolangLexer lexer();
 
     /**
      * Returns the cursor for this parser, the cursor maintains
@@ -66,7 +65,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @return The cursor.
      * @since 3.0.0
      */
-    default @NotNull Cursor cursor() {
+    default Cursor cursor() {
         //noinspection resource
         return lexer().cursor();
     }
@@ -107,7 +106,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @throws IOException If reading or parsing fails
      * @since 3.0.0
      */
-    default @NotNull List<Expression> parseAll() throws IOException {
+    default List<Expression> parseAll() throws IOException {
         List<Expression> tokens = new ArrayList<>();
         Expression expr;
         while ((expr = next()) != null) {
@@ -134,7 +133,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @throws IOException If parser initialization fails.
      * @since 3.0.0
      */
-    static @NotNull MolangParser parser(final @NotNull MolangLexer lexer) throws IOException {
+    static MolangParser parser(final MolangLexer lexer) throws IOException {
         return new MolangParserImpl(lexer);
     }
 
@@ -147,7 +146,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @throws IOException If parser initialization fails.
      * @since 3.0.0
      */
-    static @NotNull MolangParser parser(final @NotNull Reader reader) throws IOException {
+    static MolangParser parser(final Reader reader) throws IOException {
         return parser(MolangLexer.lexer(reader));
     }
 
@@ -161,7 +160,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @throws IOException If parser initialization fails.
      * @since 3.0.0
      */
-    static @NotNull MolangParser parser(final @NotNull String string) throws IOException {
+    static MolangParser parser(final String string) throws IOException {
         return parser(MolangLexer.lexer(string));
     }
 
@@ -173,7 +172,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @throws IOException If reading or parsing fails.
      * @since 3.0.0
      */
-    static @NotNull List<Expression> parseAll(final @NotNull Reader reader) throws IOException {
+    static List<Expression> parseAll(final Reader reader) throws IOException {
         try (MolangParser parser = parser(reader)) {
             return parser.parseAll();
         }
@@ -187,7 +186,7 @@ public /* sealed */ interface MolangParser /* permits MolangParserImpl */ extend
      * @throws IOException If reading or parsing fails.
      * @since 3.0.0
      */
-    static @NotNull List<Expression> parseAll(final @NotNull String string) throws IOException {
+    static List<Expression> parseAll(final String string) throws IOException {
         try (MolangParser parser = parser(string)) {
             return parser.parseAll();
         }

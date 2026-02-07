@@ -23,37 +23,27 @@
  */
 package team.unnamed.mocha.runtime.binding;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.ExecutionContext;
 import team.unnamed.mocha.runtime.JavaTypes;
-import team.unnamed.mocha.runtime.value.ArrayValue;
-import team.unnamed.mocha.runtime.value.Function;
-import team.unnamed.mocha.runtime.value.JavaValue;
-import team.unnamed.mocha.runtime.value.NumberValue;
-import team.unnamed.mocha.runtime.value.StringValue;
-import team.unnamed.mocha.runtime.value.Value;
+import team.unnamed.mocha.runtime.value.*;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
 final class ReflectiveFunction<T> implements Function<T> {
-    private final Object object;
+    private final @Nullable Object object;
     private final Method method;
 
-    ReflectiveFunction(final @Nullable Object object, final @NotNull Method method) {
+    ReflectiveFunction(final @Nullable Object object, final Method method) {
         this.object = object;
         this.method = requireNonNull(method, "method");
     }
 
-    static @NotNull Value of(final @Nullable Object any) {
+    static Value of(final @Nullable Object any) {
         if (any instanceof Value) {
             return (Value) any;
         } else if (any instanceof Number) {
@@ -81,11 +71,11 @@ final class ReflectiveFunction<T> implements Function<T> {
     }
 
     @Override
-    public @NotNull Value evaluate(final @NotNull ExecutionContext<T> context, final @NotNull Arguments arguments) {
+    public Value evaluate(final ExecutionContext<T> context, final Arguments arguments) {
         final Parameter[] parameters = method.getParameters();
         final Type[] genericParameterTypes = method.getGenericParameterTypes();
 
-        final Object[] values = new Object[parameters.length];
+        final @Nullable Object[] values = new Object[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
             final Parameter parameter = parameters[i];
             Class<?> parameterType = parameter.getType();
@@ -94,7 +84,7 @@ final class ReflectiveFunction<T> implements Function<T> {
             if (i == parameters.length - 1 && method.isVarArgs()) {
                 // varargs
                 final Class<?> componentType = parameterType.getComponentType();
-                final List<Value> varArgsValues = new ArrayList<>();
+                final List<@Nullable Value> varArgsValues = new ArrayList<>();
                 while (true) {
                     final Argument argument = arguments.next();
                     if (argument.expression() == null) {

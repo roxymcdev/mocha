@@ -25,8 +25,7 @@ package team.unnamed.mocha;
 
 import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.MolangParser;
 import team.unnamed.mocha.parser.ParseException;
 import team.unnamed.mocha.parser.ast.Expression;
@@ -47,12 +46,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-final class MochaEngineImpl<T> implements MochaEngine<T> {
+final class MochaEngineImpl<T extends @Nullable Object> implements MochaEngine<T> {
     private final Scope scope;
     private final T entity;
     private final MolangCompiler compiler;
 
-    private Consumer<@NotNull ParseException> parseExceptionHandler;
+    private @Nullable Consumer<ParseException> parseExceptionHandler;
     private boolean warnOnReflectiveFunctionUsage;
 
     public MochaEngineImpl(final T entity, final Consumer<Scope.Builder> scopeBuilder) {
@@ -64,7 +63,7 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
     }
 
     @Override
-    public double eval(final @NotNull List<Expression> expressions) {
+    public double eval(final List<Expression> expressions) {
         // create bindings that just apply for this evaluation
         final Scope local = scope.copy();
         {
@@ -87,12 +86,11 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
             }
         }
 
-        // ensure returned value is a number
-        return lastResult == null ? 0D : lastResult.getAsNumber();
+        return lastResult.getAsNumber();
     }
 
     @Override
-    public double eval(final @NotNull Reader source) {
+    public double eval(final Reader source) {
         final List<Expression> parsed;
         try {
             parsed = parse(source);
@@ -109,7 +107,7 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
     }
 
     @Override
-    public @NotNull MochaFunction prepareEval(final @NotNull Reader reader) {
+    public MochaFunction prepareEval(final Reader reader) {
         final List<Expression> parsed;
         try {
             parsed = parse(reader);
@@ -129,14 +127,14 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
             }
 
             @Override
-            public @NotNull String toString() {
+            public String toString() {
                 return "MochaPreparedFunction(" + parsed + ")";
             }
         };
     }
 
     @Override
-    public @NotNull MochaFunction prepareEval(final @NotNull String code) {
+    public MochaFunction prepareEval(final String code) {
         final List<Expression> parsed;
         try {
             parsed = parse(code);
@@ -152,7 +150,7 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
                 }
 
                 @Override
-                public @NotNull String toString() {
+                public String toString() {
                     return "MochaPreparedFunction('" + code + "', " + e.getMessage() + ")";
                 }
             };
@@ -165,14 +163,14 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
             }
 
             @Override
-            public @NotNull String toString() {
+            public String toString() {
                 return "MochaPreparedFunction(" + parsed + ")";
             }
         };
     }
 
     @Override
-    public <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull TypeToken<F> interfaceType) {
+    public <F extends MochaCompiledFunction> F compile(final Reader reader, final TypeToken<F> interfaceType) {
         List<Expression> parsed;
         try {
             parsed = parse(reader);
@@ -188,17 +186,17 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
     }
 
     @Override
-    public @NotNull ClassPool classPool() {
+    public ClassPool classPool() {
         return compiler.classPool();
     }
 
     @Override
-    public @NotNull Scope scope() {
+    public Scope scope() {
         return scope;
     }
 
     @Override
-    public void bind(final @NotNull Class<?> clazz) {
+    public void bind(final Class<?> clazz) {
         final JavaObjectBinding javaObjectBinding = JavaObjectBinding.of(clazz, null, null);
         for (final String name : javaObjectBinding.names()) {
             scope.set(name, javaObjectBinding);
@@ -206,7 +204,7 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
     }
 
     @Override
-    public <B> void bindInstance(final @NotNull Class<? super B> clazz, final @NotNull B instance, final @NotNull String name, final @NotNull String @NotNull ... aliases) {
+    public <B> void bindInstance(final Class<? super B> clazz, final B instance, final String name, final String ... aliases) {
         final JavaObjectBinding javaObjectBinding = JavaObjectBinding.of(clazz, instance, null);
         scope.set(name, javaObjectBinding);
         for (final String alias : aliases) {
@@ -215,24 +213,24 @@ final class MochaEngineImpl<T> implements MochaEngine<T> {
     }
 
     @Override
-    public @NotNull List<Expression> parse(final @NotNull Reader reader) throws IOException {
+    public List<Expression> parse(final Reader reader) throws IOException {
         return MolangParser.parser(reader).parseAll();
     }
 
     @Override
-    public @NotNull MochaEngine<T> warnOnReflectiveFunctionUsage(final boolean warnOnReflectiveFunctionUsage) {
+    public MochaEngine<T> warnOnReflectiveFunctionUsage(final boolean warnOnReflectiveFunctionUsage) {
         this.warnOnReflectiveFunctionUsage = warnOnReflectiveFunctionUsage;
         return this;
     }
 
     @Override
-    public @NotNull MochaEngine<T> handleParseExceptions(final @Nullable Consumer<@NotNull ParseException> exceptionHandler) {
+    public MochaEngine<T> handleParseExceptions(final @Nullable Consumer<ParseException> exceptionHandler) {
         this.parseExceptionHandler = exceptionHandler;
         return this;
     }
 
     @Override
-    public @NotNull MochaEngine<T> postCompile(final @Nullable Consumer<byte @NotNull []> bytecodeConsumer) {
+    public MochaEngine<T> postCompile(final @Nullable Consumer<byte []> bytecodeConsumer) {
         compiler.postCompile(bytecodeConsumer);
         return this;
     }

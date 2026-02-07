@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * Represents a {@link ObjectValue} property.
  *
@@ -40,7 +38,7 @@ public interface ObjectProperty {
      * @return The created property
      * @since 3.0.0
      */
-    static @NotNull ObjectProperty property(final @NotNull Value value, final boolean constant) {
+    static ObjectProperty property(final Value value, final boolean constant) {
         return new ObjectPropertyImpl(value, constant);
     }
     
@@ -50,7 +48,7 @@ public interface ObjectProperty {
      * @return The value of this property
      * @since 3.0.0
      */
-    @NotNull Value value();
+    Value value();
 
     /**
      * Determines whether this property is constant and cannot

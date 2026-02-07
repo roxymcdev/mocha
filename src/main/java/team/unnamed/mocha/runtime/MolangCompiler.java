@@ -24,22 +24,11 @@
 package team.unnamed.mocha.runtime;
 
 import com.google.common.reflect.TypeToken;
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtConstructor;
-import javassist.CtField;
-import javassist.CtMethod;
-import javassist.NotFoundException;
-import javassist.bytecode.BadBytecode;
-import javassist.bytecode.Bytecode;
-import javassist.bytecode.Descriptor;
-import javassist.bytecode.MethodInfo;
-import javassist.bytecode.StackMapTable;
+import javassist.*;
+import javassist.bytecode.*;
 import javassist.bytecode.stackmap.MapMaker;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ast.Expression;
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 import team.unnamed.mocha.runtime.compiled.Named;
@@ -47,11 +36,8 @@ import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
 import team.unnamed.mocha.util.JavassistUtil;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -63,13 +49,13 @@ import static java.util.Objects.requireNonNull;
 public final class MolangCompiler {
     private static final Random RANDOM = new Random();
 
-    private final Object entity;
+    private final @Nullable Object entity;
     private final ClassPool classPool;
 
     private final Scope scope;
-    private Consumer<byte @NotNull []> postCompile;
+    private @Nullable Consumer<byte []> postCompile;
 
-    public MolangCompiler(final @Nullable Object entity, final @NotNull Scope scope) {
+    public MolangCompiler(final @Nullable Object entity, final Scope scope) {
         this.entity = entity;
         this.classPool = ClassPool.getDefault();
         this.scope = requireNonNull(scope, "scope");
@@ -79,16 +65,16 @@ public final class MolangCompiler {
         return entity;
     }
 
-    public @NotNull ClassPool classPool() {
+    public ClassPool classPool() {
         return classPool;
     }
 
-    public void postCompile(final @Nullable Consumer<byte @NotNull []> postCompile) {
+    public void postCompile(final @Nullable Consumer<byte []> postCompile) {
         this.postCompile = postCompile;
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends MochaCompiledFunction> @NotNull T compile(final @NotNull List<Expression> expressions, final @NotNull TypeToken<T> typeToken) {
+    public <T extends MochaCompiledFunction> T compile(final List<Expression> expressions, final TypeToken<T> typeToken) {
         requireNonNull(expressions, "expressions");
         requireNonNull(typeToken, "typeToken");
 

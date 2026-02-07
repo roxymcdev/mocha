@@ -21,12 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package team.unnamed.mocha.runtime.binding;
+@NullMarked
+@ApiStatus.Internal
+package team.unnamed.mocha.util;
 
-import java.lang.annotation.*;
-
-@Documented
-@Target(ElementType.PARAMETER)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Entity {
-}
+import org.jetbrains.annotations.ApiStatus;
+import org.jspecify.annotations.NullMarked;

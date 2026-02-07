@@ -23,7 +23,6 @@
  */
 package team.unnamed.mocha.runtime;
 
-import org.jetbrains.annotations.NotNull;
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 
 /**
@@ -33,7 +32,7 @@ import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
  */
 @FunctionalInterface
 public interface MochaFunction extends MochaCompiledFunction {
-    static @NotNull MochaFunction nop() {
+    static MochaFunction nop() {
         return NopMochaFunctionHolder.NOP;
     }
 

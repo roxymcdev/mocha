@@ -24,8 +24,7 @@
 package team.unnamed.mocha.runtime.binding;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.value.Value;
 
 import java.lang.reflect.Field;
@@ -57,9 +56,9 @@ public final class JavaFieldBinding implements RegisteredBinding {
         INLINEABLE_TYPES = Collections.unmodifiableSet(inlineableTypes);
     }
 
-    private final Object object;
-    private final Field field;
-    private Supplier<Value> value;
+    private final @Nullable Object object;
+    private final @Nullable Field field;
+    private @Nullable Supplier<Value> value;
     private boolean constant;
 
     JavaFieldBinding(final @Nullable Object object, final @Nullable Field field, final @Nullable Supplier<Value> value) {
@@ -99,14 +98,14 @@ public final class JavaFieldBinding implements RegisteredBinding {
         return constant;
     }
 
-    public @NotNull Value get() {
+    public Value get() {
         if (value == null) {
             return getFromField();
         }
         return value.get();
     }
 
-    private @NotNull Value getFromField() {
+    private Value getFromField() {
         // try using the field
         requireNonNull(field, "field");
 

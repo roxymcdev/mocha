@@ -27,8 +27,7 @@ import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ParseException;
 import team.unnamed.mocha.parser.ast.Expression;
 import team.unnamed.mocha.runtime.MochaFunction;
@@ -56,13 +55,13 @@ import static java.util.Objects.requireNonNull;
  *
  * @since 3.0.0
  */
-public interface MochaEngine<T> {
-    static <T> MochaEngine<T> create(T entity) {
+public interface MochaEngine<T extends @Nullable Object> {
+    static <T extends @Nullable Object> MochaEngine<T> create(T entity) {
         return new MochaEngineImpl<>(entity, b -> {
         });
     }
 
-    static <T> MochaEngine<T> create(T entity, Consumer<Scope.Builder> scopeBuilder) {
+    static <T extends @Nullable Object> MochaEngine<T> create(T entity, Consumer<Scope.Builder> scopeBuilder) {
         return new MochaEngineImpl<>(entity, scopeBuilder);
     }
 
@@ -79,7 +78,7 @@ public interface MochaEngine<T> {
      * @since 3.0.0
      */
     @Contract("_ -> new")
-    static <T> @NotNull MochaEngine<T> createStandard(T entity) {
+    static <T extends @Nullable Object> MochaEngine<T> createStandard(T entity) {
         return create(entity, builder -> {
             builder.set("math", JavaObjectBinding.of(MochaMath.class, null, new MochaMath()));
             final MutableObjectBinding variableBinding = new MutableObjectBinding();
@@ -96,7 +95,7 @@ public interface MochaEngine<T> {
      * @since 3.0.0
      */
     @Contract("-> new")
-    static @NotNull MochaEngine<?> createStandard() {
+    static MochaEngine<?> createStandard() {
         return createStandard(null);
     }
 
@@ -115,7 +114,7 @@ public interface MochaEngine<T> {
      *                        are syntax errors in the script
      * @since 3.0.0
      */
-    @NotNull List<Expression> parse(final @NotNull Reader reader) throws IOException;
+    List<Expression> parse(final Reader reader) throws IOException;
 
     /**
      * Parses the given {@code string} to a list of
@@ -125,7 +124,7 @@ public interface MochaEngine<T> {
      * @return The list of parsed expressions
      * @throws ParseException If parsing fails
      */
-    default @NotNull List<Expression> parse(final @NotNull String string) throws ParseException {
+    default List<Expression> parse(final String string) throws ParseException {
         try (final StringReader reader = new StringReader(string)) {
             return parse(reader);
         } catch (final ParseException e) {
@@ -147,7 +146,7 @@ public interface MochaEngine<T> {
      * @return The result of the evaluation.
      * @since 3.0.0
      */
-    double eval(final @NotNull List<Expression> expressions);
+    double eval(final List<Expression> expressions);
 
     /**
      * Parses and evaluates the given Molang source.
@@ -164,7 +163,7 @@ public interface MochaEngine<T> {
      * @see #eval(List)
      * @since 3.0.0
      */
-    double eval(final @NotNull Reader source);
+    double eval(final Reader source);
 
     /**
      * Parses and evaluates the given Molang source.
@@ -181,7 +180,7 @@ public interface MochaEngine<T> {
      * @see #eval(List)
      * @since 3.0.0
      */
-    default double eval(final @NotNull String source) {
+    default double eval(final String source) {
         requireNonNull(source, "script");
         try (final StringReader reader = new StringReader(source)) {
             return eval(reader);
@@ -204,7 +203,7 @@ public interface MochaEngine<T> {
      * @return The cached, interpretable function
      * @since 3.0.0
      */
-    @NotNull MochaFunction prepareEval(final @NotNull Reader reader);
+    MochaFunction prepareEval(final Reader reader);
 
     /**
      * Parses the given {@code string} and returns a cached,
@@ -219,7 +218,7 @@ public interface MochaEngine<T> {
      * @return The cached, interpretable function
      * @since 3.0.0
      */
-    default @NotNull MochaFunction prepareEval(final @NotNull String string) {
+    default MochaFunction prepareEval(final String string) {
         try (final StringReader reader = new StringReader(string)) {
             return prepareEval(reader);
         }
@@ -238,7 +237,7 @@ public interface MochaEngine<T> {
      * @return The compiled function.
      * @since 3.0.0
      */
-    default <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull Class<F> interfaceType) {
+    default <F extends MochaCompiledFunction> F compile(final Reader reader, final Class<F> interfaceType) {
         return compile(reader, TypeToken.of(interfaceType));
     }
 
@@ -252,7 +251,7 @@ public interface MochaEngine<T> {
      * @return The compiled function.
      * @since 3.0.0
      */
-    default <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull String code, final @NotNull Class<F> interfaceType) {
+    default <F extends MochaCompiledFunction> F compile(final String code, final Class<F> interfaceType) {
         requireNonNull(code, "code");
         try (final StringReader reader = new StringReader(code)) {
             return compile(reader, interfaceType);
@@ -267,10 +266,10 @@ public interface MochaEngine<T> {
      * @param interfaceType The interface to implement, must
      *                      have a single method and implement {@link MochaCompiledFunction}.
      * @return The compiled function.
-     * @since 3.0.1-roxy.1
+     * @since 4.0
      */
     @SuppressWarnings("unchecked")
-    default @NotNull MochaCompiledFunction compile(final @NotNull Reader reader, final @NotNull Type interfaceType) {
+    default MochaCompiledFunction compile(final Reader reader, final Type interfaceType) {
         requireNonNull(interfaceType, "type");
 
         TypeToken<?> typeToken = TypeToken.of(interfaceType);
@@ -290,9 +289,9 @@ public interface MochaEngine<T> {
      * @param interfaceType The interface to implement, must
      *                      have a single method and implement {@link MochaCompiledFunction}.
      * @return The compiled function.
-     * @since 3.0.1-roxy.1
+     * @since 4.0
      */
-    default @NotNull MochaCompiledFunction compile(final @NotNull String code, final @NotNull Type interfaceType) {
+    default MochaCompiledFunction compile(final String code, final Type interfaceType) {
         requireNonNull(code, "code");
         try (final StringReader reader = new StringReader(code)) {
             return compile(reader, interfaceType);
@@ -307,9 +306,9 @@ public interface MochaEngine<T> {
      * @param interfaceType The interface to implement, must
      *                      have a single method.
      * @return The compiled function.
-     * @since 3.0.1-roxy.1
+     * @since 4.0
      */
-    <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull Reader reader, final @NotNull TypeToken<F> interfaceType);
+    <F extends MochaCompiledFunction> F compile(final Reader reader, final TypeToken<F> interfaceType);
 
     /**
      * Compiles the given code into a Molang function
@@ -319,9 +318,9 @@ public interface MochaEngine<T> {
      * @param interfaceType The interface to implement, must
      *                      have a single method.
      * @return The compiled function.
-     * @since 3.0.1-roxy.1
+     * @since 4.0
      */
-    default <F extends MochaCompiledFunction> @NotNull F compile(final @NotNull String code, final @NotNull TypeToken<F> interfaceType) {
+    default <F extends MochaCompiledFunction> F compile(final String code, final TypeToken<F> interfaceType) {
         requireNonNull(code, "code");
         try (final StringReader reader = new StringReader(code)) {
             return compile(reader, interfaceType);
@@ -336,7 +335,7 @@ public interface MochaEngine<T> {
      * @return The compiled function.
      * @since 3.0.0
      */
-    default @NotNull MochaFunction compile(final @NotNull Reader reader) {
+    default MochaFunction compile(final Reader reader) {
         return compile(reader, MochaFunction.class);
     }
 
@@ -348,7 +347,7 @@ public interface MochaEngine<T> {
      * @return The compiled function.
      * @since 3.0.0
      */
-    default @NotNull MochaFunction compile(final @NotNull String code) {
+    default MochaFunction compile(final String code) {
         requireNonNull(code, "code");
         try (final StringReader reader = new StringReader(code)) {
             return compile(reader);
@@ -364,7 +363,7 @@ public interface MochaEngine<T> {
      * @apiNote This method might be removed in a future minor version.
      */
     @ApiStatus.Internal
-    @NotNull ClassPool classPool();
+    ClassPool classPool();
     //#endregion END COMPILING API
 
     //#region BINDING API
@@ -387,7 +386,7 @@ public interface MochaEngine<T> {
      * @see Binding
      * @since 3.0.0
      */
-    void bind(final @NotNull Class<?> clazz);
+    void bind(final Class<?> clazz);
 
     /**
      * Binds the given {@code instance} non-static fields and methods.
@@ -410,7 +409,7 @@ public interface MochaEngine<T> {
      * @param <B>      The instance's type.
      * @since 3.0.0
      */
-    <B> void bindInstance(final @NotNull Class<? super B> clazz, final @NotNull B instance, final @NotNull String name, final @NotNull String @NotNull ... aliases);
+    <B> void bindInstance(final Class<? super B> clazz, final B instance, final String name, final String ... aliases);
     //#endregion
 
     //#region CONFIGURATION API
@@ -434,7 +433,7 @@ public interface MochaEngine<T> {
      * @since 3.0.0
      */
     @Contract("_ -> this")
-    @NotNull MochaEngine<T> warnOnReflectiveFunctionUsage(final boolean warnOnReflectiveFunctionUsage);
+    MochaEngine<T> warnOnReflectiveFunctionUsage(final boolean warnOnReflectiveFunctionUsage);
 
     /**
      * Sets the {@link ParseException} handler. This handler will be called
@@ -450,7 +449,7 @@ public interface MochaEngine<T> {
      * @since 3.0.0
      */
     @Contract("_ -> this")
-    @NotNull MochaEngine<T> handleParseExceptions(final @Nullable Consumer<@NotNull ParseException> exceptionHandler);
+    MochaEngine<T> handleParseExceptions(final @Nullable Consumer<ParseException> exceptionHandler);
 
     /**
      * Sets the post-compile function, which is called after a script
@@ -465,7 +464,7 @@ public interface MochaEngine<T> {
      * @since 3.0.0
      */
     @Contract("_ -> this")
-    @NotNull MochaEngine<T> postCompile(final @Nullable Consumer<byte @NotNull []> bytecodeConsumer);
+    MochaEngine<T> postCompile(final @Nullable Consumer<byte []> bytecodeConsumer);
     //#endregion
 
     /**
@@ -475,5 +474,5 @@ public interface MochaEngine<T> {
      * @return This engine's bindings
      * @since 3.0.0
      */
-    @NotNull Scope scope();
+    Scope scope();
 }

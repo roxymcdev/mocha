@@ -23,7 +23,7 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An {@link Expression} visitor. Provides a way to add
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <R> The visit result type
  * @since 3.0.0
  */
-public interface ExpressionVisitor<R> {
+public interface ExpressionVisitor<R extends @Nullable Object> {
 
     /**
      * Evaluate for the given unknown expression.
@@ -52,7 +52,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    R visit(final @NotNull Expression expression);
+    R visit(final Expression expression);
 
     /**
      * Evaluate for array access expression.
@@ -61,7 +61,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitArrayAccess(final @NotNull ArrayAccessExpression expression) {
+    default R visitArrayAccess(final ArrayAccessExpression expression) {
         return visit(expression);
     }
 
@@ -72,7 +72,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitDouble(final @NotNull DoubleExpression expression) {
+    default R visitDouble(final DoubleExpression expression) {
         return visit(expression);
     }
 
@@ -83,7 +83,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitString(final @NotNull StringExpression expression) {
+    default R visitString(final StringExpression expression) {
         return visit(expression);
     }
 
@@ -94,7 +94,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitIdentifier(final @NotNull IdentifierExpression expression) {
+    default R visitIdentifier(final IdentifierExpression expression) {
         return visit(expression);
     }
 
@@ -105,7 +105,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitTernaryConditional(final @NotNull TernaryConditionalExpression expression) {
+    default R visitTernaryConditional(final TernaryConditionalExpression expression) {
         return visit(expression);
     }
 
@@ -116,7 +116,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitUnary(final @NotNull UnaryExpression expression) {
+    default R visitUnary(final UnaryExpression expression) {
         return visit(expression);
     }
 
@@ -127,7 +127,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitExecutionScope(final @NotNull ExecutionScopeExpression expression) {
+    default R visitExecutionScope(final ExecutionScopeExpression expression) {
         return visit(expression);
     }
 
@@ -138,7 +138,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitBinary(final @NotNull BinaryExpression expression) {
+    default R visitBinary(final BinaryExpression expression) {
         return visit(expression);
     }
 
@@ -149,7 +149,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitAccess(final @NotNull AccessExpression expression) {
+    default R visitAccess(final AccessExpression expression) {
         return visit(expression);
     }
 
@@ -160,7 +160,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitCall(final @NotNull CallExpression expression) {
+    default R visitCall(final CallExpression expression) {
         return visit(expression);
     }
 
@@ -171,7 +171,7 @@ public interface ExpressionVisitor<R> {
      * @return The result.
      * @since 3.0.0
      */
-    default R visitStatement(final @NotNull StatementExpression expression) {
+    default R visitStatement(final StatementExpression expression) {
         return visit(expression);
     }
 

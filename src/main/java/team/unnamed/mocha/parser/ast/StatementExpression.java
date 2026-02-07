@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 /**
@@ -40,7 +38,7 @@ public final class StatementExpression implements Expression {
 
     private final Op op;
 
-    public StatementExpression(final @NotNull Op op) {
+    public StatementExpression(final Op op) {
         this.op = Objects.requireNonNull(op, "op");
     }
 
@@ -50,12 +48,12 @@ public final class StatementExpression implements Expression {
      * @return The statement operation/type.
      * @since 3.0.0
      */
-    public @NotNull Op op() {
+    public Op op() {
         return op;
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitStatement(this);
     }
 

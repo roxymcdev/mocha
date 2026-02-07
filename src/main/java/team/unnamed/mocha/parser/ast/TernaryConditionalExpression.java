@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -47,7 +45,7 @@ public final class TernaryConditionalExpression implements Expression {
     private Expression trueExpression;
     private Expression falseExpression;
 
-    public TernaryConditionalExpression(final @NotNull Expression conditional, final @NotNull Expression trueExpression, final @NotNull Expression falseExpression) {
+    public TernaryConditionalExpression(final Expression conditional, final Expression trueExpression, final Expression falseExpression) {
         this.conditional = requireNonNull(conditional, "conditional");
         this.trueExpression = requireNonNull(trueExpression, "trueExpression");
         this.falseExpression = requireNonNull(falseExpression, "falseExpression");
@@ -58,7 +56,7 @@ public final class TernaryConditionalExpression implements Expression {
      *
      * @since 3.0.0
      */
-    public @NotNull Expression condition() {
+    public Expression condition() {
         return conditional;
     }
 
@@ -68,7 +66,7 @@ public final class TernaryConditionalExpression implements Expression {
      * @param condition The condition
      * @since 3.0.0
      */
-    public void condition(final @NotNull Expression condition) {
+    public void condition(final Expression condition) {
         this.conditional = requireNonNull(condition, "condition");
     }
 
@@ -78,7 +76,7 @@ public final class TernaryConditionalExpression implements Expression {
      *
      * @since 3.0.0
      */
-    public @NotNull Expression trueExpression() {
+    public Expression trueExpression() {
         return trueExpression;
     }
 
@@ -89,7 +87,7 @@ public final class TernaryConditionalExpression implements Expression {
      * @param trueExpression The true expression
      * @since 3.0.0
      */
-    public void trueExpression(final @NotNull Expression trueExpression) {
+    public void trueExpression(final Expression trueExpression) {
         this.trueExpression = requireNonNull(trueExpression, "trueExpression");
     }
 
@@ -99,7 +97,7 @@ public final class TernaryConditionalExpression implements Expression {
      *
      * @since 3.0.0
      */
-    public @NotNull Expression falseExpression() {
+    public Expression falseExpression() {
         return falseExpression;
     }
 
@@ -110,12 +108,12 @@ public final class TernaryConditionalExpression implements Expression {
      * @param falseExpression The false expression
      * @since 3.0.0
      */
-    public void falseExpression(final @NotNull Expression falseExpression) {
+    public void falseExpression(final Expression falseExpression) {
         this.falseExpression = requireNonNull(falseExpression, "falseExpression");
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitTernaryConditional(this);
     }
 

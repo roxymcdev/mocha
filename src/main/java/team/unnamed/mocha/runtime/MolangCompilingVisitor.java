@@ -30,7 +30,7 @@ import javassist.CtPrimitiveType;
 import javassist.NotFoundException;
 import javassist.bytecode.Bytecode;
 import javassist.bytecode.Descriptor;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ast.*;
 import team.unnamed.mocha.runtime.binding.Entity;
 import team.unnamed.mocha.runtime.binding.JavaFieldBinding;
@@ -51,7 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResult> {
+final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable CompileVisitResult> {
     private static final int[] OPCODES_BY_BINARY_EXPRESSION_OP = new int[]{
             -1, // AND(300),
             -1, //        OR(200),
@@ -94,9 +94,9 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
      * The type that the current visitor method is expecting
      * to be pushed to the stack.
      */
-    private CtClass expectedType = null;
+    private @Nullable CtClass expectedType = null;
 
-    MolangCompilingVisitor(final @NotNull FunctionCompileState compileState) {
+    MolangCompilingVisitor(final FunctionCompileState compileState) {
         this.interpreter = new ExpressionInterpreter<>(null, compileState.scope());
         this.functionCompileState = compileState;
         this.typeToken = compileState.typeToken();
@@ -118,7 +118,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public CompileVisitResult visitBinary(final @NotNull BinaryExpression expression) {
+    public @Nullable CompileVisitResult visitBinary(final BinaryExpression expression) {
         final BinaryExpression.Op op = expression.op();
 
         if (op == BinaryExpression.Op.ASSIGN) {
@@ -284,7 +284,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public @NotNull CompileVisitResult visitDouble(final @NotNull DoubleExpression expression) {
+    public CompileVisitResult visitDouble(final DoubleExpression expression) {
         final double value = expression.value();
         if (expectedType == CtClass.voidType) {
             // nothing!
@@ -336,7 +336,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public @NotNull CompileVisitResult visitString(final @NotNull StringExpression expression) {
+    public CompileVisitResult visitString(final StringExpression expression) {
         if (expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
@@ -352,7 +352,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public @NotNull CompileVisitResult visitUnary(final @NotNull UnaryExpression expression) {
+    public @Nullable CompileVisitResult visitUnary(final UnaryExpression expression) {
         switch (expression.op()) {
             case RETURN: {
                 expectedType = methodReturnType;
@@ -446,7 +446,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public @NotNull CompileVisitResult visitTernaryConditional(final @NotNull TernaryConditionalExpression expression) {
+    public CompileVisitResult visitTernaryConditional(final TernaryConditionalExpression expression) {
         final Expression conditionExpr = expression.condition();
         final Expression trueExpr = expression.trueExpression();
         final Expression falseExpr = expression.falseExpression();
@@ -486,7 +486,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public CompileVisitResult visitIdentifier(final @NotNull IdentifierExpression expression) {
+    public CompileVisitResult visitIdentifier(final IdentifierExpression expression) {
         final String name = expression.name();
         final Integer paramIndex = argumentParameterIndexes.get(name);
         if (paramIndex == null) {
@@ -527,7 +527,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public CompileVisitResult visitAccess(final @NotNull AccessExpression expression) {
+    public @Nullable CompileVisitResult visitAccess(final AccessExpression expression) {
         final Expression objectExpr = expression.object();
         final String property = expression.property();
 
@@ -548,13 +548,13 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
         final Scope scope = functionCompileState.scope();
         final Value objectValue = objectExpr.visit(new ExpressionVisitor<Value>() {
             @Override
-            public @NotNull Value visitIdentifier(final @NotNull IdentifierExpression expression) {
+            public Value visitIdentifier(final IdentifierExpression expression) {
                 final String name = expression.name();
                 return scope.get(name);
             }
 
             @Override
-            public @NotNull Value visitAccess(final @NotNull AccessExpression expression) {
+            public Value visitAccess(final AccessExpression expression) {
                 final Value object = expression.object().visit(this);
                 if (object instanceof ObjectValue) {
                     return ((ObjectValue) object).get(expression.property());
@@ -564,7 +564,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
             }
 
             @Override
-            public @NotNull Value visit(final @NotNull Expression expression) {
+            public Value visit(final Expression expression) {
                 return NumberValue.zero();
             }
         });
@@ -600,19 +600,19 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public CompileVisitResult visitCall(final @NotNull CallExpression expression) {
+    public @Nullable CompileVisitResult visitCall(final CallExpression expression) {
         final Scope scope = functionCompileState.scope();
         final Expression functionExpr = expression.function();
 
         final Value functionValue = functionExpr.visit(new ExpressionVisitor<Value>() {
             @Override
-            public @NotNull Value visitIdentifier(final @NotNull IdentifierExpression expression) {
+            public Value visitIdentifier(final IdentifierExpression expression) {
                 final String name = expression.name();
                 return scope.get(name);
             }
 
             @Override
-            public @NotNull Value visitAccess(final @NotNull AccessExpression expression) {
+            public Value visitAccess(final AccessExpression expression) {
                 final Value object = expression.object().visit(this);
                 if (object instanceof ObjectValue) {
                     return ((ObjectValue) object).get(expression.property());
@@ -622,7 +622,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
             }
 
             @Override
-            public @NotNull Value visit(final @NotNull Expression expression) {
+            public Value visit(final Expression expression) {
                 return NumberValue.zero();
             }
         });
@@ -734,7 +734,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<CompileVisitResu
     }
 
     @Override
-    public CompileVisitResult visit(final @NotNull Expression expression) {
+    public CompileVisitResult visit(final Expression expression) {
         throw new UnsupportedOperationException("Unsupported expression type: " + expression);
     }
 }

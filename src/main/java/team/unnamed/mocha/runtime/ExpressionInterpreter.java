@@ -24,8 +24,7 @@
 package team.unnamed.mocha.runtime;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.ast.*;
 import team.unnamed.mocha.runtime.binding.JavaFunction;
 import team.unnamed.mocha.runtime.value.*;
@@ -36,7 +35,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 @ApiStatus.Internal
-public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>, ExecutionContext<T> {
+public final class ExpressionInterpreter<T extends @Nullable Object> implements ExpressionVisitor<Value>, ExecutionContext<T> {
     private static final List<Evaluator> BINARY_EVALUATORS = Arrays.asList(
             bool((a, b) -> a.eval() && b.eval()),
             bool((a, b) -> a.eval() || b.eval()),
@@ -121,7 +120,7 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
 
     private boolean warnOnReflectiveFunctionUsage;
 
-    public ExpressionInterpreter(final @Nullable T entity, final @NotNull Scope scope) {
+    public ExpressionInterpreter(final T entity, final Scope scope) {
         this.entity = entity;
         this.scope = requireNonNull(scope, "scope");
     }
@@ -167,21 +166,21 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value eval(final @NotNull Expression expression) {
+    public Value eval(final Expression expression) {
         return expression.visit(this);
     }
 
-    public <R> @NotNull ExpressionInterpreter<R> createChild(final @Nullable R entity) {
+    public <R extends @Nullable Object> ExpressionInterpreter<R> createChild(final @Nullable R entity) {
         return new ExpressionInterpreter<>(entity, this.scope);
     }
 
-    public @NotNull ExpressionInterpreter<T> createChild() {
+    public ExpressionInterpreter<T> createChild() {
         // Note that it will have its own returnValue, but same bindings
         // (Should we create new bindings?)
         return new ExpressionInterpreter<>(this.entity, this.scope);
     }
 
-    public @NotNull Scope bindings() {
+    public Scope bindings() {
         return scope;
     }
 
@@ -192,7 +191,7 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitArrayAccess(final @NotNull ArrayAccessExpression expression) {
+    public Value visitArrayAccess(final ArrayAccessExpression expression) {
         final Value array = expression.array().visit(this);
         final Value index = expression.index().visit(this);
         if (!(array instanceof ArrayValue)) {
@@ -205,7 +204,7 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitAccess(final @NotNull AccessExpression expression) {
+    public Value visitAccess(final AccessExpression expression) {
         final Value objectValue = expression.object().visit(this);
         if (objectValue instanceof ObjectValue) {
             return ((ObjectValue) objectValue).get(expression.property());
@@ -214,7 +213,7 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitCall(final @NotNull CallExpression expression) {
+    public @Nullable Value visitCall(final CallExpression expression) {
         final List<Expression> argumentsExpressions = expression.arguments();
         final Function.Argument[] arguments = new Function.Argument[argumentsExpressions.size()];
         for (int i = 0; i < argumentsExpressions.size(); i++) {
@@ -230,12 +229,19 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
                 // Parameters:
                 // - double:           How many times should we loop
                 // - CallableBinding:  The looped expressions
-                int n = Math.round((float) args.next().eval().getAsNumber());
+
+                Value timesValue = args.next().eval();
+                if (!(timesValue instanceof NumberValue)) {
+                    return NumberValue.zero();
+                }
+
+                int times = Math.round((float) timesValue.getAsNumber());
+
                 Value expr = args.next().eval();
 
                 if (expr instanceof Function) {
                     final Function<T> callable = (Function<T>) expr;
-                    for (int i = 0; i < n; i++) {
+                    for (int i = 0; i < times; i++) {
                         final ExpressionInterpreter<T> evaluatorThisCall = createChild();
                         callable.evaluate(evaluatorThisCall);
                         if (evaluatorThisCall.flag() == StatementExpression.Op.BREAK) {
@@ -309,12 +315,12 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitDouble(final @NotNull DoubleExpression expression) {
+    public Value visitDouble(final DoubleExpression expression) {
         return NumberValue.of(expression.value());
     }
 
     @Override
-    public @NotNull Value visitExecutionScope(final @NotNull ExecutionScopeExpression executionScope) {
+    public Value visitExecutionScope(final ExecutionScopeExpression executionScope) {
         List<Expression> expressions = executionScope.expressions();
         return (Function<T>) (context, arguments) -> {
             for (Expression expression : expressions) {
@@ -331,12 +337,12 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitIdentifier(final @NotNull IdentifierExpression expression) {
+    public Value visitIdentifier(final IdentifierExpression expression) {
         return scope.get(expression.name());
     }
 
     @Override
-    public @NotNull Value visitBinary(@NotNull BinaryExpression expression) {
+    public Value visitBinary(BinaryExpression expression) {
         return BINARY_EVALUATORS.get(expression.op().ordinal()).eval(
                 this,
                 expression.left(),
@@ -345,7 +351,7 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitUnary(final @NotNull UnaryExpression expression) {
+    public Value visitUnary(final UnaryExpression expression) {
         final Value value = expression.expression().visit(this);
         switch (expression.op()) {
             case LOGICAL_NEGATION:
@@ -362,7 +368,7 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitStatement(final @NotNull StatementExpression expression) {
+    public Value visitStatement(final StatementExpression expression) {
         switch (expression.op()) {
             case BREAK: {
                 this.flag = StatementExpression.Op.BREAK;
@@ -377,12 +383,12 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public @NotNull Value visitString(final @NotNull StringExpression expression) {
+    public Value visitString(final StringExpression expression) {
         return StringValue.of(expression.value());
     }
 
     @Override
-    public @NotNull Value visitTernaryConditional(@NotNull TernaryConditionalExpression expression) {
+    public Value visitTernaryConditional(TernaryConditionalExpression expression) {
         final Value conditionResult = expression.condition().visit(this);
         return conditionResult.getAsBoolean()
                 ? expression.trueExpression().visit(this)
@@ -390,12 +396,12 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     }
 
     @Override
-    public Value visit(final @NotNull Expression expression) {
+    public Value visit(final Expression expression) {
         throw new UnsupportedOperationException("Unsupported expression type: " + expression);
     }
 
     private interface Evaluator {
-        @NotNull Value eval(ExpressionInterpreter<?> evaluator, Expression a, Expression b);
+        Value eval(ExpressionInterpreter<?> evaluator, Expression a, Expression b);
     }
 
     private interface BooleanOperator {
@@ -425,12 +431,12 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
         private final Function.Argument[] arguments;
         private int next;
 
-        FunctionArguments(final @NotNull Function.Argument @NotNull [] arguments) {
+        FunctionArguments(final Function.Argument [] arguments) {
             this.arguments = requireNonNull(arguments, "arguments");
         }
 
         @Override
-        public Function.@NotNull Argument next() {
+        public Function.Argument next() {
             if (next < arguments.length) {
                 return arguments[next++];
             } else {
@@ -461,12 +467,12 @@ public final class ExpressionInterpreter<T> implements ExpressionVisitor<Value>,
     private class FunctionArgumentImpl implements Function.Argument {
         private final Expression expression;
 
-        FunctionArgumentImpl(final @NotNull Expression expression) {
+        FunctionArgumentImpl(final Expression expression) {
             this.expression = expression;
         }
 
         @Override
-        public @NotNull Expression expression() {
+        public Expression expression() {
             return expression;
         }
 

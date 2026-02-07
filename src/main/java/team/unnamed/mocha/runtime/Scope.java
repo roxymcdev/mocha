@@ -23,7 +23,6 @@
  */
 package team.unnamed.mocha.runtime;
 
-import org.jetbrains.annotations.NotNull;
 import team.unnamed.mocha.runtime.value.ObjectValue;
 import team.unnamed.mocha.runtime.value.Value;
 
@@ -34,11 +33,11 @@ import team.unnamed.mocha.runtime.value.Value;
  * @since 3.0.0
  */
 public interface Scope extends ObjectValue {
-    static @NotNull Scope create() {
+    static Scope create() {
         return new ScopeImpl();
     }
 
-    static @NotNull Builder builder() {
+    static Builder builder() {
         return new ScopeImpl.BuilderImpl();
     }
 
@@ -51,14 +50,14 @@ public interface Scope extends ObjectValue {
      * @return The shallow copy of this scope.
      * @since 3.0.0
      */
-    @NotNull Scope copy();
+    Scope copy();
 
     void readOnly(final boolean readOnly);
 
     boolean readOnly();
 
     interface Builder {
-        Builder set(final @NotNull String name, final @NotNull Value value);
+        Builder set(final String name, final Value value);
 
         Scope build();
     }

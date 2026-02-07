@@ -24,8 +24,7 @@
 package team.unnamed.mocha.runtime.binding;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.value.Function;
 import team.unnamed.mocha.runtime.value.ObjectProperty;
 import team.unnamed.mocha.runtime.value.ObjectValue;
@@ -45,7 +44,7 @@ public final class JavaObjectBinding implements ObjectValue {
     private final String[] names;
     private final Map<String, Object> entries = new CaseInsensitiveStringHashMap<>();
 
-    JavaObjectBinding(final @NotNull String @NotNull [] names) {
+    JavaObjectBinding(final String [] names) {
         this.names = requireNonNull(names, "names");
     }
 
@@ -53,7 +52,7 @@ public final class JavaObjectBinding implements ObjectValue {
         this.names = new String[0];
     }
 
-    private static <T extends Value> T getBacking(final @Nullable Map<String, ObjectProperty> backingProperties, final @NotNull String functionName, final Class<T> valueType) {
+    private static <T extends Value> @Nullable T getBacking(final @Nullable Map<String, ObjectProperty> backingProperties, final String functionName, final Class<T> valueType) {
         if (backingProperties != null) {
             final ObjectProperty property = backingProperties.get(functionName);
             if (property != null && valueType.isInstance(property.value())) {
@@ -63,7 +62,7 @@ public final class JavaObjectBinding implements ObjectValue {
         return null;
     }
 
-    public static <T> @NotNull JavaObjectBinding of(final @NotNull Class<T> clazz, final @Nullable T instance, final @Nullable ObjectValue backingObject) {
+    public static <T> JavaObjectBinding of(final Class<T> clazz, final @Nullable T instance, final @Nullable ObjectValue backingObject) {
         final Binding binding = clazz.getDeclaredAnnotation(Binding.class);
         if (binding == null && instance == null) {
             throw new IllegalArgumentException("Statically bound " + clazz + " is not annotated with @Binding");
@@ -183,11 +182,11 @@ public final class JavaObjectBinding implements ObjectValue {
         return object;
     }
 
-    public @NotNull String[] names() {
+    public String[] names() {
         return names;
     }
 
-    public @Nullable JavaFieldBinding getField(final @NotNull String name) {
+    public @Nullable JavaFieldBinding getField(final String name) {
         final Object value = entries.get(name);
         if (value instanceof JavaFieldBinding) {
             return (JavaFieldBinding) value;
@@ -197,7 +196,7 @@ public final class JavaObjectBinding implements ObjectValue {
     }
 
     @Override
-    public @Nullable ObjectProperty getProperty(final @NotNull String name) {
+    public @Nullable ObjectProperty getProperty(final String name) {
         final Object value = entries.get(name);
         if (value == null) {
             return null;
@@ -212,7 +211,7 @@ public final class JavaObjectBinding implements ObjectValue {
     }
 
     @Override
-    public boolean set(final @NotNull String name, final @Nullable Value value) {
+    public boolean set(final String name, final @Nullable Value value) {
         return true;
     }
 }

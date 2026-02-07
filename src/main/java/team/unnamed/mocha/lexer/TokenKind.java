@@ -23,13 +23,7 @@
  */
 package team.unnamed.mocha.lexer;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * An enum of token kinds. Represents a single token kind.
@@ -231,7 +225,7 @@ public enum TokenKind {
 
     private final Set<Tag> tags;
 
-    TokenKind(final Tag @NotNull ... tags) {
+    TokenKind(final Tag ... tags) {
         this.tags = EnumSet.copyOf(Arrays.asList(tags));
     }
 
@@ -248,7 +242,7 @@ public enum TokenKind {
      * the given tag
      * @since 3.0.0
      */
-    public boolean hasTag(final @NotNull Tag tag) {
+    public boolean hasTag(final Tag tag) {
         Objects.requireNonNull(tag, "tag");
         return tags.contains(tag);
     }

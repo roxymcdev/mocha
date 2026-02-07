@@ -24,8 +24,7 @@
 package team.unnamed.mocha.runtime;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.value.Value;
 
 import java.util.HashMap;
@@ -52,12 +51,12 @@ public final class JavaTypes {
     private JavaTypes() {
     }
 
-    public static @Nullable Object getNullValueForType(final @NotNull Class<?> type) {
+    public static @Nullable Object getNullValueForType(final Class<?> type) {
         requireNonNull(type, "type");
         return NULL_VALUES.get(type);
     }
 
-    public static @Nullable Object convert(final @NotNull Value value, final @NotNull Class<?> type) {
+    public static @Nullable Object convert(final Value value, final Class<?> type) {
         requireNonNull(value, "value");
         requireNonNull(type, "type");
         if (type == String.class) {

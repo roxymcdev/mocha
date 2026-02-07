@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.runtime;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.value.ObjectProperty;
 import team.unnamed.mocha.runtime.value.Value;
 import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
@@ -36,19 +35,19 @@ final class ScopeImpl implements Scope {
     private boolean readOnly;
 
     @Override
-    public @Nullable ObjectProperty getProperty(final @NotNull String name) {
+    public @Nullable ObjectProperty getProperty(final String name) {
         return bindings.get(name);
     }
 
     @Override
-    public @NotNull Scope copy() {
+    public Scope copy() {
         final ScopeImpl copy = new ScopeImpl();
         copy.bindings.putAll(this.bindings);
         return copy;
     }
 
     @Override
-    public boolean set(final @NotNull String name, final @Nullable Value value) {
+    public boolean set(final String name, final @Nullable Value value) {
         if (readOnly) {
             return false;
         }
@@ -71,7 +70,7 @@ final class ScopeImpl implements Scope {
     }
 
     @Override
-    public @NotNull Map<String, ObjectProperty> entries() {
+    public Map<String, ObjectProperty> entries() {
         return bindings;
     }
 
@@ -79,7 +78,7 @@ final class ScopeImpl implements Scope {
         private final Map<String, ObjectProperty> properties = new CaseInsensitiveStringHashMap<>();
 
         @Override
-        public Builder set(@NotNull String name, @NotNull Value value) {
+        public Builder set(String name, Value value) {
             properties.put(name, ObjectProperty.property(value, true));
             return this;
         }

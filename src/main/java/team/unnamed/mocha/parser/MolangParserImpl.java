@@ -23,8 +23,7 @@
  */
 package team.unnamed.mocha.parser;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.lexer.MolangLexer;
 import team.unnamed.mocha.lexer.Token;
 import team.unnamed.mocha.lexer.TokenKind;
@@ -46,7 +45,7 @@ final class MolangParserImpl implements MolangParser {
     // we have to use Object and a flag since null is a valid value too
     private @Nullable Object current = UNSET_FLAG;
 
-    MolangParserImpl(final @NotNull MolangLexer lexer) {
+    MolangParserImpl(final MolangLexer lexer) {
         this.lexer = requireNonNull(lexer, "lexer");
     }
 
@@ -56,7 +55,7 @@ final class MolangParserImpl implements MolangParser {
     // to be parsed, e.g. literals, statements, identifiers,
     // wrapped expressions and execution scopes
     //
-    static @NotNull Expression parseSingle(final @NotNull MolangLexer lexer) throws IOException {
+    static Expression parseSingle(final MolangLexer lexer) throws IOException {
         Token token = lexer.current();
         switch (token.kind()) {
             case FLOAT:
@@ -94,7 +93,7 @@ final class MolangParserImpl implements MolangParser {
                         // end reached but not closed yet, huh?
                         throw new ParseException("Found the end before the execution scope closing token", lexer.cursor());
                     } else if (token.kind() == TokenKind.ERROR) {
-                        throw new ParseException("Found an invalid token (error): " + token.value(), lexer.cursor());
+                        throw new ParseException("Found an invalid token (error): " + token.valueOrNull(), lexer.cursor());
                     } else {
                         if (token.kind() != TokenKind.SEMICOLON) {
                             throw new ParseException("Missing semicolon", lexer.cursor());
@@ -142,8 +141,8 @@ final class MolangParserImpl implements MolangParser {
         return DoubleExpression.ZERO;
     }
 
-    static @NotNull Expression parseCompoundExpression(
-            final @NotNull MolangLexer lexer,
+    static Expression parseCompoundExpression(
+            final MolangLexer lexer,
             final int lastPrecedence
     ) throws IOException {
         Expression expr = parseSingle(lexer);
@@ -163,9 +162,9 @@ final class MolangParserImpl implements MolangParser {
         }
     }
 
-    static @NotNull Expression parseCompound(
-            final @NotNull MolangLexer lexer,
-            final @NotNull Expression left,
+    static Expression parseCompound(
+            final MolangLexer lexer,
+            final Expression left,
             final int lastPrecedence
     ) throws IOException {
         Token current = lexer.current();
@@ -216,7 +215,7 @@ final class MolangParserImpl implements MolangParser {
                             break;
                         } else {
                             if (current.kind() == TokenKind.ERROR) {
-                                throw new ParseException("Found error token: " + current.value(), lexer.cursor());
+                                throw new ParseException("Found error token: " + current.valueOrNull(), lexer.cursor());
                             } else if (current.kind() != TokenKind.COMMA) {
                                 throw new ParseException("Expected a comma, got " + current.kind(), lexer.cursor());
                             }
@@ -282,7 +281,7 @@ final class MolangParserImpl implements MolangParser {
     }
 
     @Override
-    public @NotNull MolangLexer lexer() {
+    public MolangLexer lexer() {
         return lexer;
     }
 
@@ -315,7 +314,7 @@ final class MolangParserImpl implements MolangParser {
 
         if (token.kind() == TokenKind.ERROR) {
             // tokenization error!
-            throw new ParseException("Found an invalid token (error): " + token.value(), cursor());
+            throw new ParseException("Found an invalid token (error): " + token.valueOrNull(), cursor());
         }
 
         final Expression expression = parseCompoundExpression(lexer, 0);

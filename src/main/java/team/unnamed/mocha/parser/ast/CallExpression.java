@@ -23,8 +23,6 @@
  */
 package team.unnamed.mocha.parser.ast;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -42,7 +40,7 @@ public final class CallExpression implements Expression {
     private final List<Expression> arguments;
     private Expression function;
 
-    public CallExpression(final @NotNull Expression function, final @NotNull List<Expression> arguments) {
+    public CallExpression(final Expression function, final List<Expression> arguments) {
         this.function = requireNonNull(function, "function");
         this.arguments = requireNonNull(arguments, "arguments");
     }
@@ -52,7 +50,7 @@ public final class CallExpression implements Expression {
      *
      * @since 3.0.0
      */
-    public @NotNull Expression function() {
+    public Expression function() {
         return function;
     }
 
@@ -61,7 +59,7 @@ public final class CallExpression implements Expression {
      *
      * @since 3.0.0
      */
-    public void function(final @NotNull Expression function) {
+    public void function(final Expression function) {
         this.function = requireNonNull(function, "function");
     }
 
@@ -71,12 +69,12 @@ public final class CallExpression implements Expression {
      *
      * @since 3.0.0
      */
-    public @NotNull List<Expression> arguments() {
+    public List<Expression> arguments() {
         return arguments;
     }
 
     @Override
-    public <R> R visit(final @NotNull ExpressionVisitor<R> visitor) {
+    public <R> R visit(final ExpressionVisitor<R> visitor) {
         return visitor.visitCall(this);
     }
 
