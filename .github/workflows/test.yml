@@ -6,9 +6,16 @@ on:
     tags-ignore: ['**']
   pull_request:
 
+permissions: { }
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+      pull-requests: write
+      actions: read
 
     steps:
       - name: Checkout project sources
