@@ -1,17 +1,17 @@
 name: Publish Artifacts
 
 on:
-  workflow_run:
-    workflows: [ 'Test' ]
-    types:
-      - completed
-    branches:
-      - main
+  push:
+    branches: ['main']
 
 jobs:
-  publish:
+  publish-artifacts:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      checks: write
+      pull-requests: write
+      actions: read
 
     steps:
       - name: Checkout project sources
@@ -26,6 +26,15 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+
+      - name: Run tests
+        run: ./gradlew test
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: '**/build/test-results/test/TEST-*.xml'
 
       - name: Publish artifacts
         run: ./gradlew publish -ProxymcUsername=${{ env.REPO_USER }} -ProxymcPassword=${{ env.REPO_PASS }}

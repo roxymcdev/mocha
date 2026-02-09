@@ -1,12 +1,9 @@
-name: Test
+name: Test PR
 
 on:
   push:
-    branches: ['**']
-    tags-ignore: ['**']
+    branches-ignore: ['main']
   pull_request:
-
-permissions: { }
 
 jobs:
   test:
