@@ -25,8 +25,6 @@ package team.unnamed.mocha.lexer;
 
 import org.jspecify.annotations.Nullable;
 
-import java.util.Objects;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -36,38 +34,12 @@ import static java.util.Objects.requireNonNull;
  *
  * @since 3.0.0
  */
-public final class Token {
-    private final TokenKind kind;
-    private final @Nullable String value;
-    private final int start;
-    private final int end;
-
-    public Token(
-            final TokenKind kind,
-            final @Nullable String value,
-            final int start,
-            final int end
-    ) {
-        this.kind = requireNonNull(kind, "kind");
-        this.value = value;
-        this.start = start;
-        this.end = end;
-
+public record Token(TokenKind kind, @Nullable String value, int start, int end) {
+    public Token {
         // verify state, token kinds that have HAS_VALUE tag, must have a non-null value
         if (kind.hasTag(TokenKind.Tag.HAS_VALUE) && value == null) {
-            throw new IllegalArgumentException("A token with kind "
-                    + kind + " must have a non-null value");
+            throw new IllegalArgumentException("A token with kind " + kind + " must have a non-null value");
         }
-    }
-
-    /**
-     * Gets the token kind.
-     *
-     * @return The token kind
-     * @since 3.0.0
-     */
-    public TokenKind kind() {
-        return kind;
     }
 
     /**
@@ -81,56 +53,17 @@ public final class Token {
         return value;
     }
 
+    @Override
     public String value() {
-        return Objects.requireNonNull(value, "Token of kind %s doesn't provide a value".formatted(kind));
-    }
-
-    /**
-     * Gets the start index of this token.
-     *
-     * @return The token start
-     * @since 3.0.0
-     */
-    public int start() {
-        return start;
-    }
-
-    /**
-     * Gets the end index of this token.
-     *
-     * @return The token end
-     * @since 3.0.0
-     */
-    public int end() {
-        return end;
+        return requireNonNull(value, "Token of kind %s doesn't provide a value".formatted(kind));
     }
 
     @Override
     public String toString() {
         if (kind.hasTag(TokenKind.Tag.HAS_VALUE)) {
             return kind + "(" + value + ")";
-        } else {
-            return kind.toString();
         }
-    }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Token token = (Token) o;
-        if (start != token.start) return false;
-        if (end != token.end) return false;
-        if (kind != token.kind) return false;
-        return Objects.equals(value, token.value);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = kind.hashCode();
-        result = 31 * result + (value != null ? value.hashCode() : 0);
-        result = 31 * result + start;
-        result = 31 * result + end;
-        return result;
+        return kind.toString();
     }
 }

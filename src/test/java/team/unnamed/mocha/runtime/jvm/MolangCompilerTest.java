@@ -28,11 +28,13 @@ import team.unnamed.mocha.MochaEngine;
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 import team.unnamed.mocha.runtime.compiled.Named;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MolangCompilerTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         final ScriptType script = engine.compile("false ? a : b", ScriptType.class);
         assertEquals(2, script.eval(1, 2));
@@ -56,7 +58,7 @@ public class MolangCompilerTest {
     }
 
     @Test
-    void test_native() {
+    void test_native() throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         //compiler.registerStaticNatives(MolangCompilerTest.class);
         System.out.println(engine.compile("3 * math.abs(5 * 5 * -1) + 1").evaluate());

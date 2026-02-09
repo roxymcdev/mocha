@@ -25,11 +25,13 @@ package team.unnamed.mocha.runtime;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import static team.unnamed.mocha.MochaAssertions.assertEvaluatesAndCompiles;
 
 class CaseSensitivityTest {
     @Test
-    void test() {
+    void test() throws IOException {
         assertEvaluatesAndCompiles(Math.PI, "MATH.PI");
         assertEvaluatesAndCompiles(Math.PI, "math.PI");
         assertEvaluatesAndCompiles(Math.PI, "Math.PI");

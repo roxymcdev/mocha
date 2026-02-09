@@ -247,29 +247,28 @@ final class MolangParserImpl implements MolangParser {
         }
 
         // check for binary expressions
-        final BinaryExpression.Op op;
+        final BinaryExpression.Op op = switch (current.kind()) {
+            case AMPAMP -> BinaryExpression.Op.AND;
+            case BARBAR -> BinaryExpression.Op.OR;
+            case LT -> BinaryExpression.Op.LT;
+            case LTE -> BinaryExpression.Op.LTE;
+            case GT -> BinaryExpression.Op.GT;
+            case GTE -> BinaryExpression.Op.GTE;
+            case PLUS -> BinaryExpression.Op.ADD;
+            case SUB -> BinaryExpression.Op.SUB;
+            case STAR -> BinaryExpression.Op.MUL;
+            case SLASH -> BinaryExpression.Op.DIV;
+            case QUESQUES -> BinaryExpression.Op.NULL_COALESCE;
+            case EQ -> BinaryExpression.Op.ASSIGN;
+            case EQEQ -> BinaryExpression.Op.EQ;
+            case BANGEQ -> BinaryExpression.Op.NEQ;
+            case ARROW ->BinaryExpression.Op.ARROW;
+            default -> null;
+        };
 
-        // @formatter:off
-        // I wish this was java 17
-        switch (current.kind()) {
-            case AMPAMP: op = BinaryExpression.Op.AND; break;
-            case BARBAR: op = BinaryExpression.Op.OR; break;
-            case LT: op = BinaryExpression.Op.LT; break;
-            case LTE: op = BinaryExpression.Op.LTE; break;
-            case GT: op = BinaryExpression.Op.GT; break;
-            case GTE: op = BinaryExpression.Op.GTE; break;
-            case PLUS: op = BinaryExpression.Op.ADD; break;
-            case SUB: op = BinaryExpression.Op.SUB; break;
-            case STAR: op = BinaryExpression.Op.MUL; break;
-            case SLASH: op = BinaryExpression.Op.DIV; break;
-            case QUESQUES: op = BinaryExpression.Op.NULL_COALESCE; break;
-            case EQ: op = BinaryExpression.Op.ASSIGN; break;
-            case EQEQ: op = BinaryExpression.Op.EQ; break;
-            case BANGEQ: op = BinaryExpression.Op.NEQ; break;
-            case ARROW: op = BinaryExpression.Op.ARROW; break;
-            default: return left;
+        if (op == null) {
+            return left;
         }
-        // @formatter:on
 
         final int precedence = op.precedence();
         if (lastPrecedence >= precedence) {

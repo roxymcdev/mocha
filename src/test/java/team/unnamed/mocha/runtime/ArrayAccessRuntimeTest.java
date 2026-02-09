@@ -27,13 +27,14 @@ import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
 import team.unnamed.mocha.runtime.binding.Binding;
 
+import java.io.IOException;
 import java.util.function.UnaryOperator;
 
 import static team.unnamed.mocha.MochaAssertions.assertEvaluates;
 
 class ArrayAccessRuntimeTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final UnaryOperator<MochaEngine<?>> configurer = engine -> {
             engine.bind(QueryImpl.class);
             return engine;

@@ -24,13 +24,9 @@
 package team.unnamed.mocha.parser;
 
 import org.junit.jupiter.api.Test;
-import team.unnamed.mocha.parser.ast.AccessExpression;
-import team.unnamed.mocha.parser.ast.BinaryExpression;
-import team.unnamed.mocha.parser.ast.CallExpression;
-import team.unnamed.mocha.parser.ast.DoubleExpression;
-import team.unnamed.mocha.parser.ast.IdentifierExpression;
-import team.unnamed.mocha.parser.ast.StringExpression;
+import team.unnamed.mocha.parser.ast.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -39,7 +35,7 @@ import static team.unnamed.mocha.MochaAssertions.assertParseError;
 
 class CallParseTest {
     @Test
-    void test() {
+    void test() throws IOException {
         assertCreateTree("query.is_baby()", new CallExpression(
                 new AccessExpression(
                         new IdentifierExpression("query"),
@@ -87,7 +83,7 @@ class CallParseTest {
     }
 
     @Test
-    void test_incorrect() {
+    void test_incorrect() throws IOException {
         // unclosed parenthesis
         assertParseError("math.clamp(", 11);
 

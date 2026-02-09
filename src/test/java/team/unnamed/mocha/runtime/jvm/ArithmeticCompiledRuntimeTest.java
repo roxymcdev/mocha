@@ -28,11 +28,13 @@ import team.unnamed.mocha.MochaEngine;
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 import team.unnamed.mocha.runtime.compiled.Named;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ArithmeticCompiledRuntimeTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
 
         {

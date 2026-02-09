@@ -36,8 +36,8 @@ import team.unnamed.mocha.runtime.value.Value;
  *
  * @since 3.0.0
  */
-public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
-    private static final ExpressionVisitor<Boolean> INSTANCE = new IsConstantExpression(null);
+public final class IsConstantExpression implements ExpressionVisitor<Boolean, ExpressionVisitor.Context> {
+    private static final IsConstantExpression INSTANCE = new IsConstantExpression(null);
 
     private final @Nullable ExpressionInterpreter<?> evaluator;
     private final @Nullable ObjectValue scope;
@@ -56,25 +56,25 @@ public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitArrayAccess(final ArrayAccessExpression expression) {
+    public Boolean visitArrayAccess(final ArrayAccessExpression expression, final Context ctx) {
         // array access is constant if the array and the index are constants
         return expression.array().visit(this) && expression.index().visit(this);
     }
 
     @Override
-    public Boolean visitDouble(final DoubleExpression expression) {
+    public Boolean visitDouble(final DoubleExpression expression, final Context ctx) {
         // literals are constants
         return true;
     }
 
     @Override
-    public Boolean visitString(final StringExpression expression) {
+    public Boolean visitString(final StringExpression expression, final Context ctx) {
         // literals are constants
         return true;
     }
 
     @Override
-    public Boolean visitIdentifier(final IdentifierExpression expression) {
+    public Boolean visitIdentifier(final IdentifierExpression expression, final Context ctx) {
         if (scope == null) {
             // scope not given, can't know if it's constant or not
             return false;
@@ -91,7 +91,7 @@ public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitTernaryConditional(final TernaryConditionalExpression expression) {
+    public Boolean visitTernaryConditional(final TernaryConditionalExpression expression, final Context ctx) {
         // ternary conditional is only constant if all of its parts are constant
         return expression.condition().visit(this)
                 && expression.trueExpression().visit(this)
@@ -99,13 +99,13 @@ public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitUnary(final UnaryExpression expression) {
+    public Boolean visitUnary(final UnaryExpression expression, final Context ctx) {
         // unary expressions are constant if their expression is constant
         return expression.expression().visit(this);
     }
 
     @Override
-    public Boolean visitExecutionScope(final ExecutionScopeExpression expression) {
+    public Boolean visitExecutionScope(final ExecutionScopeExpression expression, final Context ctx) {
         // execution scopes are constant if all of their expressions are constant
         for (final Expression expr : expression.expressions()) {
             if (!expr.visit(this)) {
@@ -116,13 +116,13 @@ public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitBinary(final BinaryExpression expression) {
+    public Boolean visitBinary(final BinaryExpression expression, final Context ctx) {
         // binary expressions are constant if both of their expressions are constant
         return expression.left().visit(this) && expression.right().visit(this);
     }
 
     @Override
-    public Boolean visitAccess(final AccessExpression expression) {
+    public Boolean visitAccess(final AccessExpression expression, final Context ctx) {
         final Expression objectExpr = expression.object();
 
         if (!objectExpr.visit(this)) {
@@ -151,7 +151,7 @@ public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitCall(final CallExpression expression) {
+    public Boolean visitCall(final CallExpression expression, final Context ctx) {
         for (final Expression argument : expression.arguments()) {
             if (!argument.visit(this)) {
                 // non-constant argument indicates non-constant call
@@ -193,13 +193,13 @@ public final class IsConstantExpression implements ExpressionVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitStatement(final StatementExpression expression) {
+    public Boolean visitStatement(final StatementExpression expression, final Context ctx) {
         // statements are constants
         return true;
     }
 
     @Override
-    public Boolean visit(final Expression expression) {
+    public Boolean visit(final Expression expression, final Context ctx) {
         // can't know if they are constant or not
         return false;
     }

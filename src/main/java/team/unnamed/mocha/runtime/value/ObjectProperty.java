@@ -41,7 +41,7 @@ public interface ObjectProperty {
     static ObjectProperty property(final Value value, final boolean constant) {
         return new ObjectPropertyImpl(value, constant);
     }
-    
+
     /**
      * Returns the value of this property.
      *

@@ -54,8 +54,8 @@ public final class DoubleExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final ExpressionVisitor<R> visitor) {
-        return visitor.visitDouble(this);
+    public <R, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx) {
+        return visitor.visitDouble(this, ctx);
     }
 
     @Override

@@ -57,8 +57,8 @@ public final class IdentifierExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final ExpressionVisitor<R> visitor) {
-        return visitor.visitIdentifier(this);
+    public <R, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx) {
+        return visitor.visitIdentifier(this, ctx);
     }
 
     @Override

@@ -28,11 +28,13 @@ import team.unnamed.mocha.parser.ast.DoubleExpression;
 import team.unnamed.mocha.parser.ast.IdentifierExpression;
 import team.unnamed.mocha.parser.ast.UnaryExpression;
 
+import java.io.IOException;
+
 import static team.unnamed.mocha.MochaAssertions.assertCreateTree;
 
 class DoubleParseTest {
     @Test
-    void test() {
+    void test() throws IOException {
         assertCreateTree("1", new DoubleExpression(1D));
         assertCreateTree("   1   ", new DoubleExpression(1D));
         assertCreateTree("1.0", new DoubleExpression(1D));

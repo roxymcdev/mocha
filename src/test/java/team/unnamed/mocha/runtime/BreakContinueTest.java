@@ -26,11 +26,13 @@ package team.unnamed.mocha.runtime;
 import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BreakContinueTest {
     @Test
-    void test_break() {
+    void test_break() throws IOException {
         final double value = MochaEngine.createStandard().eval(String.join("\n",
                 "t.i = 0;",
                 "loop(10, {",
@@ -38,12 +40,12 @@ class BreakContinueTest {
                 "    (t.i >= 5) ? break;",
                 "});",
                 "return t.i;"
-        ));
+        )).getAsNumber();
         assertEquals(5.0D, value);
     }
 
     @Test
-    void test_continue() {
+    void test_continue() throws IOException {
         final double value = MochaEngine.createStandard().eval(
                 "t.i = 0;" +
                         "t.sum = 0;" +
@@ -53,7 +55,7 @@ class BreakContinueTest {
                         "t.sum = t.sum + t.i;" +
                         "});" +
                         "return t.sum;"
-        );
+        ).getAsNumber();
         assertEquals(125.0D, value);
     }
 }

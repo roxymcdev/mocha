@@ -28,6 +28,7 @@ import javassist.CtClass;
 import javassist.CtPrimitiveType;
 import javassist.NotFoundException;
 import javassist.bytecode.Bytecode;
+import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.TypeCastException;
 
 import java.util.HashSet;
@@ -80,12 +81,21 @@ public class JavassistUtil {
         return type.isPrimitive() || isWrapper(type);
     }
 
+    public static CtClass addCastIfPossible(final Bytecode bytecode, final CtClass from, final @Nullable CtClass to) {
+        if (to == null) {
+            return from;
+        }
+
+        addCast(bytecode, from, to);
+        return to;
+    }
+
     public static void addCast(final Bytecode bytecode, final CtClass from, final CtClass to) {
         requireNonNull(bytecode, "bytecode");
         requireNonNull(from, "from");
         requireNonNull(to, "to");
 
-        if (from.equals(to)) {
+        if (isSubtypeOf(from, to)) {
             // no cast needed
             return;
         }

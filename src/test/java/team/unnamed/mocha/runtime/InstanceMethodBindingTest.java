@@ -27,9 +27,11 @@ import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
 import team.unnamed.mocha.runtime.binding.Binding;
 
+import java.io.IOException;
+
 class InstanceMethodBindingTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         engine.bindInstance(TestInstanceMethods.class, new TestInstanceMethods("UnnamedTeam"), "instance");
         engine.eval("instance.print_name()");

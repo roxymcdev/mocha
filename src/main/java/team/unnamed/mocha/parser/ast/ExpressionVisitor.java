@@ -37,32 +37,32 @@ import org.jspecify.annotations.Nullable;
  * }</pre>
  *
  * <p>Please note that users MUST use {@link Expression#visit(ExpressionVisitor)}
- * and NOT ExpressionVisitor's {@link ExpressionVisitor#visit(Expression)}, because
+ * and NOT ExpressionVisitor's {@link ExpressionVisitor#visit(Expression, Context)}, because
  * it will not work as intended.</p>
  *
  * @param <R> The visit result type
  * @since 3.0.0
  */
-public interface ExpressionVisitor<R extends @Nullable Object> {
+public interface ExpressionVisitor<R extends @Nullable Object, C extends ExpressionVisitor.Context> {
 
     /**
      * Evaluate for the given unknown expression.
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    R visit(final Expression expression);
+    R visit(final Expression expression, final C ctx);
 
     /**
      * Evaluate for array access expression.
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitArrayAccess(final ArrayAccessExpression expression) {
-        return visit(expression);
+    default R visitArrayAccess(final ArrayAccessExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -70,10 +70,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitDouble(final DoubleExpression expression) {
-        return visit(expression);
+    default R visitDouble(final DoubleExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -81,10 +81,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitString(final StringExpression expression) {
-        return visit(expression);
+    default R visitString(final StringExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -92,10 +92,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitIdentifier(final IdentifierExpression expression) {
-        return visit(expression);
+    default R visitIdentifier(final IdentifierExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -103,10 +103,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitTernaryConditional(final TernaryConditionalExpression expression) {
-        return visit(expression);
+    default R visitTernaryConditional(final TernaryConditionalExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -114,10 +114,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitUnary(final UnaryExpression expression) {
-        return visit(expression);
+    default R visitUnary(final UnaryExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -125,10 +125,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitExecutionScope(final ExecutionScopeExpression expression) {
-        return visit(expression);
+    default R visitExecutionScope(final ExecutionScopeExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -136,10 +136,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitBinary(final BinaryExpression expression) {
-        return visit(expression);
+    default R visitBinary(final BinaryExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -147,10 +147,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitAccess(final AccessExpression expression) {
-        return visit(expression);
+    default R visitAccess(final AccessExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -158,10 +158,10 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitCall(final CallExpression expression) {
-        return visit(expression);
+    default R visitCall(final CallExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
     /**
@@ -169,10 +169,20 @@ public interface ExpressionVisitor<R extends @Nullable Object> {
      *
      * @param expression The expression.
      * @return The result.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default R visitStatement(final StatementExpression expression) {
-        return visit(expression);
+    default R visitStatement(final StatementExpression expression, final C ctx) {
+        return visit(expression, ctx);
     }
 
+    interface Context {
+        static Context empty() {
+            final class Holder {
+                static final Context EMPTY = new Context() {
+                };
+            }
+
+            return Holder.EMPTY;
+        }
+    }
 }

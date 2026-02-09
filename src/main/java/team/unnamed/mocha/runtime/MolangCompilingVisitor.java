@@ -23,7 +23,6 @@
  */
 package team.unnamed.mocha.runtime;
 
-import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtPrimitiveType;
@@ -36,8 +35,8 @@ import team.unnamed.mocha.runtime.binding.Entity;
 import team.unnamed.mocha.runtime.binding.JavaFieldBinding;
 import team.unnamed.mocha.runtime.binding.JavaFunction;
 import team.unnamed.mocha.runtime.binding.JavaObjectBinding;
+import team.unnamed.mocha.runtime.value.DoubleValue;
 import team.unnamed.mocha.runtime.value.Function;
-import team.unnamed.mocha.runtime.value.NumberValue;
 import team.unnamed.mocha.runtime.value.ObjectValue;
 import team.unnamed.mocha.runtime.value.Value;
 import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
@@ -51,7 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable CompileVisitResult> {
+final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable CompileVisitResult, MolangCompilingVisitor.CompilingContext> {
     private static final int[] OPCODES_BY_BINARY_EXPRESSION_OP = new int[]{
             -1, // AND(300),
             -1, //        OR(200),
@@ -71,54 +70,36 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
             Bytecode.IFNE //        NEQ(500);
     };
 
-    private final ExpressionInterpreter<?> interpreter;
-
-    private final TypeToken<?> typeToken;
     private final ClassPool classPool;
     private final Bytecode bytecode;
-    private final Method method;
 
     private final FunctionCompileState functionCompileState;
     private final Map<String, Object> requirements;
-    private final Map<String, Integer> argumentParameterIndexes;
 
-    private final Map<String, Integer> localsByName = new CaseInsensitiveStringHashMap<>();
+    private final Map<String, LocalVar> localsByName = new CaseInsensitiveStringHashMap<>();
 
     private final CtClass stringCtType;
     private final CtClass doubleCtType;
-    /**
-     * The method return type
-     */
-    private final CtClass methodReturnType;
-    /**
-     * The type that the current visitor method is expecting
-     * to be pushed to the stack.
-     */
-    private @Nullable CtClass expectedType = null;
+
+    private final Map<String, CtClass> parametersCtTypes;
 
     MolangCompilingVisitor(final FunctionCompileState compileState) {
-        this.interpreter = new ExpressionInterpreter<>(null, compileState.scope());
         this.functionCompileState = compileState;
-        this.typeToken = compileState.typeToken();
         this.classPool = compileState.classPool();
         this.bytecode = compileState.bytecode();
-        this.method = compileState.method();
+        this.parametersCtTypes = compileState.parametersCtTypes();
         this.requirements = compileState.requirements();
-        this.argumentParameterIndexes = compileState.argumentParameterIndexes();
 
         try {
             this.stringCtType = classPool.get(String.class.getName());
             this.doubleCtType = classPool.get(Double.class.getName());
-            this.methodReturnType = classPool.get(typeToken.resolveType(method.getGenericReturnType()).getRawType().getName());
         } catch (final NotFoundException e) {
             throw new IllegalStateException("Couldn't find CtClass for standard classes", e);
         }
-
-        expectedType = methodReturnType;
     }
 
     @Override
-    public @Nullable CompileVisitResult visitBinary(final BinaryExpression expression) {
+    public @Nullable CompileVisitResult visitBinary(final BinaryExpression expression, final CompilingContext ctx) {
         final BinaryExpression.Op op = expression.op();
 
         if (op == BinaryExpression.Op.ASSIGN) {
@@ -130,24 +111,22 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                     final String property = ((AccessExpression) left).property();
 
                     if (name.equals("temp") || name.equals("t")) {
-                        final CompileVisitResult result = expression.right().visit(this);
-                        final int localIndex = localsByName.computeIfAbsent(property, k -> {
+                        final CompileVisitResult result = expression.right().visit(this, new CompilingContext(null));
+                        final LocalVar localVar = localsByName.computeIfAbsent(property, k -> {
                             int index = functionCompileState.maxLocals();
                             if (result.lastPushedType() == CtClass.doubleType || result.lastPushedType() == CtClass.longType) {
                                 functionCompileState.maxLocals(index + 2);
                             } else {
                                 functionCompileState.maxLocals(index + 1);
                             }
-                            return index;
+                            return new LocalVar(result.lastPushedType(), index);
                         });
-                        bytecode.addStore(localIndex, CtClass.doubleType);
+                        bytecode.addStore(localVar.index, result.lastPushedType());
                         return null;
                     }
                 }
             }
         }
-
-        final CtClass currentExpectedType = expectedType;
 
         //@formatter:off
         switch (op) {
@@ -155,13 +134,13 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 final int const_0;
                 final int const_1;
 
-                if (expectedType == CtClass.doubleType) {
+                if (ctx.expectedType == CtClass.doubleType) {
                     const_0 = Bytecode.DCONST_0;
                     const_1 = Bytecode.DCONST_1;
-                } else if (expectedType == CtClass.floatType) {
+                } else if (ctx.expectedType == CtClass.floatType) {
                     const_0 = Bytecode.FCONST_0;
                     const_1 = Bytecode.FCONST_1;
-                } else if (expectedType == CtClass.longType) {
+                } else if (ctx.expectedType == CtClass.longType) {
                     const_0 = Bytecode.LCONST_0;
                     const_1 = Bytecode.LCONST_1;
                 } else {
@@ -169,12 +148,11 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                     const_1 = Bytecode.ICONST_1;
                 }
 
-                expectedType = CtClass.booleanType;
-                expression.left().visit(this); // pushes lhs value to stack as boolean
+                expression.left().visit(this, new CompilingContext(CtClass.booleanType)); // pushes lhs value to stack as boolean
                 bytecode.addOpcode(Bytecode.IFEQ); // if lhs is false set to zero
                 final int indexPc = bytecode.currentPc();
                 bytecode.addGap(2); // index1, index2 (we don't know how many bytes the next instruction will take)
-                expression.right().visit(this); // pushes rhs value to stack as boolean
+                expression.right().visit(this, new CompilingContext(CtClass.booleanType)); // pushes rhs value to stack as boolean
                 bytecode.addOpcode(Bytecode.IFEQ); // if rhs is false set to zero
                 bytecode.addIndex(7); // index1, index2, const_1, goto, index1, index2, const_0
                 bytecode.addOpcode(const_1);
@@ -183,20 +161,19 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 // jump here!
                 bytecode.write16bit(indexPc, bytecode.currentPc() - indexPc + 1);
                 bytecode.addOpcode(const_0);
-                expectedType = currentExpectedType;
-                return new CompileVisitResult(currentExpectedType);
+                return new CompileVisitResult(ctx.expectedType);
             }
             case OR: {
                 final int const_0;
                 final int const_1;
 
-                if (expectedType == CtClass.doubleType) {
+                if (ctx.expectedType == CtClass.doubleType) {
                     const_0 = Bytecode.DCONST_0;
                     const_1 = Bytecode.DCONST_1;
-                } else if (expectedType == CtClass.floatType) {
+                } else if (ctx.expectedType == CtClass.floatType) {
                     const_0 = Bytecode.FCONST_0;
                     const_1 = Bytecode.FCONST_1;
-                } else if (expectedType == CtClass.longType) {
+                } else if (ctx.expectedType == CtClass.longType) {
                     const_0 = Bytecode.LCONST_0;
                     const_1 = Bytecode.LCONST_1;
                 } else {
@@ -204,12 +181,11 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                     const_1 = Bytecode.ICONST_1;
                 }
 
-                expectedType = CtClass.booleanType;
-                expression.left().visit(this); // pushes lhs value to stack as boolean
+                expression.left().visit(this, new CompilingContext(CtClass.booleanType)); // pushes lhs value to stack as boolean
                 bytecode.addOpcode(Bytecode.IFNE); // if lhs is false set to zero
                 final int indexPc = bytecode.currentPc();
                 bytecode.addGap(2); // index1, index2 (we don't know how many bytes the next instruction will take)
-                expression.right().visit(this); // pushes rhs value to stack as boolean
+                expression.right().visit(this, new CompilingContext(CtClass.booleanType)); // pushes rhs value to stack as boolean
                 bytecode.addOpcode(Bytecode.IFEQ); // if rhs is false set to zero
                 bytecode.addIndex(7); // index1, index2, const_1, goto, index1, index2, const_0
                 // jump here!
@@ -218,8 +194,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 bytecode.addOpcode(Bytecode.GOTO);
                 bytecode.addIndex(4); // index1, index2, const_0, ((?))
                 bytecode.addOpcode(const_0);
-                expectedType = currentExpectedType;
-                return new CompileVisitResult(currentExpectedType);
+                return new CompileVisitResult(ctx.expectedType);
             }
             case EQ:
             case NEQ:
@@ -227,21 +202,19 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
             case LTE:
             case GT:
             case GTE: {
-                expectedType = CtClass.doubleType;
-                expression.left().visit(this);   // pushes lhs value to stack
-                expression.right().visit(this);  // pushes rhs value to stack
-                expectedType = currentExpectedType;
+                expression.left().visit(this, new CompilingContext(CtClass.doubleType));   // pushes lhs value to stack
+                expression.right().visit(this, new CompilingContext(CtClass.doubleType));  // pushes rhs value to stack
 
                 final int const_0;
                 final int const_1;
 
-                if (expectedType == CtClass.doubleType) {
+                if (ctx.expectedType == CtClass.doubleType) {
                     const_0 = Bytecode.DCONST_0;
                     const_1 = Bytecode.DCONST_1;
-                } else if (expectedType == CtClass.floatType) {
+                } else if (ctx.expectedType == CtClass.floatType) {
                     const_0 = Bytecode.FCONST_0;
                     const_1 = Bytecode.FCONST_1;
-                } else if (expectedType == CtClass.longType) {
+                } else if (ctx.expectedType == CtClass.longType) {
                     const_0 = Bytecode.LCONST_0;
                     const_1 = Bytecode.LCONST_1;
                 } else {
@@ -256,19 +229,19 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 bytecode.addOpcode(Bytecode.GOTO);
                 bytecode.addIndex(4);
                 bytecode.addOpcode(const_1);
-                return new CompileVisitResult(expectedType == null ? CtClass.booleanType : expectedType);
+                return new CompileVisitResult(ctx.expectedType == null ? CtClass.booleanType : ctx.expectedType);
             }
             case ADD:
             case SUB:
             case MUL:
             case DIV: {
-                expectedType = CtClass.doubleType;
-                expression.left().visit(this);   // pushes lhs value to stack
-                expression.right().visit(this);  // pushes rhs value to stack
-                expectedType = currentExpectedType;
+                expression.left().visit(this, new CompilingContext(CtClass.doubleType));   // pushes lhs value to stack
+                expression.right().visit(this, new CompilingContext(CtClass.doubleType));  // pushes rhs value to stack
 
                 bytecode.addOpcode(OPCODES_BY_BINARY_EXPRESSION_OP[op.ordinal()]);
-                return new CompileVisitResult(CtClass.doubleType);
+
+                final CtClass type = JavassistUtil.addCastIfPossible(bytecode, CtClass.doubleType, ctx.expectedType);
+                return new CompileVisitResult(type);
             }
             case ARROW:
             case NULL_COALESCE:
@@ -279,17 +252,13 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
         return null;
     }
 
-    public void endVisit() {
-        bytecode.addReturn(methodReturnType);
-    }
-
     @Override
-    public CompileVisitResult visitDouble(final DoubleExpression expression) {
+    public CompileVisitResult visitDouble(final DoubleExpression expression, final CompilingContext ctx) {
         final double value = expression.value();
-        if (expectedType == CtClass.voidType) {
+        if (ctx.expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
-        } else if (expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.booleanType, expectedType)) {
+        } else if (ctx.expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.booleanType, ctx.expectedType)) {
             // expects a boolean, push boolean
             if (value != 0.0D) {
                 bytecode.addOpcode(Bytecode.ICONST_1);
@@ -297,21 +266,21 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 bytecode.addOpcode(Bytecode.ICONST_0);
             }
             // wrap if needed
-            JavassistUtil.addCast(bytecode, CtClass.booleanType, expectedType);
-            return new CompileVisitResult(expectedType);
-        } else if (expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.intType, expectedType)) {
+            JavassistUtil.addCast(bytecode, CtClass.booleanType, ctx.expectedType);
+            return new CompileVisitResult(ctx.expectedType);
+        } else if (ctx.expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.intType, ctx.expectedType)) {
             // expects an int, push int
             bytecode.addLdc((int) value);
             // wrap if needed
-            JavassistUtil.addCast(bytecode, CtClass.intType, expectedType);
-            return new CompileVisitResult(expectedType);
-        } else if (expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.longType, expectedType)) {
+            JavassistUtil.addCast(bytecode, CtClass.intType, ctx.expectedType);
+            return new CompileVisitResult(ctx.expectedType);
+        } else if (ctx.expectedType != null && JavassistUtil.isPrimitiveOrWrapper((CtPrimitiveType) CtClass.longType, ctx.expectedType)) {
             // expects a long, push long
             bytecode.addLdc2w((long) value);
             // wrap if needed
-            JavassistUtil.addCast(bytecode, CtClass.longType, expectedType);
-            return new CompileVisitResult(expectedType);
-        } else if (expectedType == null || expectedType == CtClass.doubleType || JavassistUtil.isSubtypeOf(doubleCtType, expectedType)) {
+            JavassistUtil.addCast(bytecode, CtClass.longType, ctx.expectedType);
+            return new CompileVisitResult(ctx.expectedType);
+        } else if (ctx.expectedType == null || ctx.expectedType == CtClass.doubleType || JavassistUtil.isSubtypeOf(doubleCtType, ctx.expectedType)) {
             // expects a double or it's supertype, push double
             if (value == 1.0D) {
                 bytecode.addOpcode(Bytecode.DCONST_1);
@@ -321,75 +290,65 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 bytecode.addLdc2w(value);
             }
 
-            if (expectedType != null) {
-                // wrap if needed
-                JavassistUtil.addCast(bytecode, CtClass.doubleType, expectedType);
-            }
-
-            return new CompileVisitResult(expectedType);
+            // wrap if needed
+            final CtClass type = JavassistUtil.addCastIfPossible(bytecode, CtClass.doubleType, ctx.expectedType);
+            return new CompileVisitResult(type);
         } else {
-            System.err.println("[warning] expected type " + expectedType + " has no possible cast from double (" + expression + ")");
+            System.err.println("[warning] expected type " + ctx.expectedType + " has no possible cast from double (" + expression + ")");
             // evaluate to zero
-            bytecode.addConstZero(expectedType);
-            return new CompileVisitResult(expectedType);
+            bytecode.addConstZero(ctx.expectedType);
+            return new CompileVisitResult(ctx.expectedType);
         }
     }
 
     @Override
-    public CompileVisitResult visitString(final StringExpression expression) {
-        if (expectedType == CtClass.voidType) {
+    public CompileVisitResult visitString(final StringExpression expression, final CompilingContext ctx) {
+        if (ctx.expectedType == CtClass.voidType) {
             // nothing!
             return new CompileVisitResult(CtClass.voidType);
-        } else if (expectedType == null || JavassistUtil.isSubtypeOf(stringCtType, expectedType)) {
+        } else if (ctx.expectedType == null || JavassistUtil.isSubtypeOf(stringCtType, ctx.expectedType)) {
             // expects a string or it's supertype, push string
             bytecode.addLdc(expression.value());
-            return new CompileVisitResult(expectedType);
+            return new CompileVisitResult(ctx.expectedType != null ? ctx.expectedType : stringCtType);
         } else {
             // evaluate to zero
-            bytecode.addConstZero(expectedType);
-            return new CompileVisitResult(expectedType);
+            bytecode.addConstZero(ctx.expectedType);
+            return new CompileVisitResult(ctx.expectedType);
         }
     }
 
     @Override
-    public @Nullable CompileVisitResult visitUnary(final UnaryExpression expression) {
+    public @Nullable CompileVisitResult visitUnary(final UnaryExpression expression, final CompilingContext ctx) {
         switch (expression.op()) {
             case RETURN: {
-                expectedType = methodReturnType;
-                expression.expression().visit(this);
-                expectedType = null;
-                bytecode.addReturn(methodReturnType);
-                return new CompileVisitResult(methodReturnType, true);
+                expression.expression().visit(this, ctx);
+                //JavassistUtil.addCast(bytecode, visit.lastPushedType(), returnCtType);
+                bytecode.addReturn(ctx.expectedType);
+                return new CompileVisitResult(ctx.expectedType, true);
             }
             case LOGICAL_NEGATION: {
-                if (expectedType == CtClass.voidType) {
+                if (ctx.expectedType == CtClass.voidType) {
                     // void,
                     // we must evaluate in case of weird expressions
                     // like: !query.print('hello')
                     // won't push anything since expectedType is set to voidType
-                    expression.expression().visit(this);
+                    expression.expression().visit(this, ctx);
                     return new CompileVisitResult(CtClass.voidType);
                 }
 
-                final CtClass currentExpectedType = expectedType;
-
-                if (currentExpectedType != null && !currentExpectedType.isPrimitive()) {
+                if (ctx.expectedType != null && !ctx.expectedType.isPrimitive()) {
                     // an unknown Object type, evaluate without pushing anything
                     // and then just push null in the stack
-                    expectedType = CtClass.voidType; // set to void so that doesn't push anything
-                    expression.expression().visit(this);
-                    expectedType = currentExpectedType;
-                    bytecode.addConstZero(currentExpectedType);
-                    return new CompileVisitResult(currentExpectedType);
+                    expression.expression().visit(this, new CompilingContext(CtClass.voidType)); // set to void so that doesn't push anything
+                    bytecode.addConstZero(ctx.expectedType);
+                    return new CompileVisitResult(ctx.expectedType);
                 }
 
                 // todo: wrap primitives to their wrapper class if needed
 
-                expectedType = CtClass.booleanType;
-                expression.expression().visit(this); // push boolean value to stack
-                expectedType = currentExpectedType;
+                expression.expression().visit(this, new CompilingContext(CtClass.booleanType)); // push boolean value to stack
 
-                if (currentExpectedType == CtClass.booleanType) {
+                if (ctx.expectedType == CtClass.booleanType) {
                     // booleans just leave it ready to branch
                     bytecode.addOpcode(Bytecode.IFNE);
                     return new CompileVisitResult(CtClass.booleanType);
@@ -398,13 +357,13 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 final int const_1;
                 final int const_0;
 
-                if (currentExpectedType == CtClass.doubleType) {
+                if (ctx.expectedType == CtClass.doubleType) {
                     const_1 = Bytecode.DCONST_1;
                     const_0 = Bytecode.DCONST_0;
-                } else if (currentExpectedType == CtClass.floatType) {
+                } else if (ctx.expectedType == CtClass.floatType) {
                     const_1 = Bytecode.FCONST_1;
                     const_0 = Bytecode.FCONST_0;
-                } else if (currentExpectedType == CtClass.longType) {
+                } else if (ctx.expectedType == CtClass.longType) {
                     const_1 = Bytecode.LCONST_1;
                     const_0 = Bytecode.LCONST_0;
                 } else {
@@ -418,10 +377,10 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 bytecode.addOpcode(Bytecode.GOTO);
                 bytecode.addIndex(4); // index1, index2, const_0, ((?))
                 bytecode.addOpcode(const_0);
-                return new CompileVisitResult(currentExpectedType);
+                return new CompileVisitResult(ctx.expectedType);
             }
             case ARITHMETICAL_NEGATION: {
-                final CompileVisitResult result = expression.expression().visit(this); // push value to stack
+                final CompileVisitResult result = expression.expression().visit(this, ctx); // push value to stack
                 if (result.is(CtClass.doubleType)) {
                     bytecode.addOpcode(Bytecode.DNEG);
                 } else if (result.is(CtClass.longType)) {
@@ -446,15 +405,12 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
     }
 
     @Override
-    public CompileVisitResult visitTernaryConditional(final TernaryConditionalExpression expression) {
+    public CompileVisitResult visitTernaryConditional(final TernaryConditionalExpression expression, final CompilingContext ctx) {
         final Expression conditionExpr = expression.condition();
         final Expression trueExpr = expression.trueExpression();
         final Expression falseExpr = expression.falseExpression();
 
-        final CtClass currentExpectedType = expectedType;
-        expectedType = CtClass.booleanType;
-        final CompileVisitResult conditionRes = expression.condition().visit(this); // push boolean value to stack
-        expectedType = currentExpectedType;
+        final CompileVisitResult conditionRes = conditionExpr.visit(this, new CompilingContext(CtClass.booleanType)); // push boolean value to stack
 
         if (conditionRes != null && conditionRes.lastPushedType() != null && !conditionRes.is(CtClass.booleanType) && !conditionRes.is(CtClass.intType)) {
             bytecode.addConstZero(conditionRes.lastPushedType()); // push 0
@@ -473,61 +429,56 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
         bytecode.addOpcode(Bytecode.IFEQ); // if false skip
         final int indexPc = bytecode.currentPc();
         bytecode.addGap(2);
-        trueExpr.visit(this); // push true value to stack
+        trueExpr.visit(this, ctx); // push true value to stack
         bytecode.addOpcode(Bytecode.GOTO); // skip pushing false value
         final int indexPc2 = bytecode.currentPc();
         bytecode.addGap(2);
         // jump here if false
         bytecode.write16bit(indexPc, bytecode.currentPc() - indexPc + 1);
-        falseExpr.visit(this); // push false value to stack
+        falseExpr.visit(this, ctx); // push false value to stack
         // jump here if true
         bytecode.write16bit(indexPc2, bytecode.currentPc() - indexPc2 + 1);
-        return new CompileVisitResult(currentExpectedType);
+        return new CompileVisitResult(ctx.expectedType);
     }
 
     @Override
-    public CompileVisitResult visitIdentifier(final IdentifierExpression expression) {
+    public CompileVisitResult visitIdentifier(final IdentifierExpression expression, final CompilingContext ctx) {
         final String name = expression.name();
-        final Integer paramIndex = argumentParameterIndexes.get(name);
-        if (paramIndex == null) {
+        final CtClass parameterCtType = parametersCtTypes.get(name);
+
+        if (parameterCtType == null) {
             throw new IllegalStateException("Unknown variable: " + name);
         }
 
-        final Parameter[] parameters = method.getParameters();
-        final Parameter parameter = parameters[paramIndex];
         int loadIndex = 1;
-        for (int i = 0; i < paramIndex; i++) {
-            final Parameter param = parameters[i];
-            final Class<?> paramType = param.getType();
-            if (paramType.equals(double.class) || paramType.equals(long.class)) {
+        for (final Map.Entry<String, CtClass> entry : parametersCtTypes.entrySet()) {
+            if (entry.getKey().equals(name)) {
+                break;
+            }
+
+            final CtClass paramType = entry.getValue();
+
+            if (paramType == CtClass.doubleType || paramType == CtClass.longType) {
                 loadIndex += 2;
             } else {
                 loadIndex += 1;
             }
         }
 
-        final CtClass parameterCtType;
-
-        try {
-            parameterCtType = classPool.get(typeToken.resolveType(parameter.getParameterizedType()).getRawType().getName());
-        } catch (NotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
         bytecode.addLoad(loadIndex, parameterCtType);
 
-        if (expectedType == null) {
+        if (ctx.expectedType == null) {
             // we are free to use anything, no need to cast
             return new CompileVisitResult(parameterCtType);
         }
 
         // convert to the expected type
-        JavassistUtil.addCast(bytecode, parameterCtType, expectedType);
-        return new CompileVisitResult(expectedType);
+        JavassistUtil.addCast(bytecode, parameterCtType, ctx.expectedType);
+        return new CompileVisitResult(ctx.expectedType);
     }
 
     @Override
-    public @Nullable CompileVisitResult visitAccess(final AccessExpression expression) {
+    public @Nullable CompileVisitResult visitAccess(final AccessExpression expression, final CompilingContext ctx) {
         final Expression objectExpr = expression.object();
         final String property = expression.property();
 
@@ -535,37 +486,40 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
             final String name = ((IdentifierExpression) objectExpr).name();
             if (name.equals("temp") || name.equals("t")) {
                 // temps are locals
-                final Integer localIndex = localsByName.get(property);
-                if (localIndex == null) {
-                    bytecode.addConstZero(CtClass.doubleType);
+                final LocalVar localVar = localsByName.get(property);
+                if (localVar == null) {
+                    bytecode.addConstZero(ctx.expectedType);
+                    return new CompileVisitResult(ctx.expectedType);
                 } else {
-                    bytecode.addLoad(localIndex, CtClass.doubleType);
+                    bytecode.addLoad(localVar.index, localVar.type);
+
+                    final CtClass type = JavassistUtil.addCastIfPossible(bytecode, localVar.type, ctx.expectedType);
+                    return new CompileVisitResult(type);
                 }
-                return new CompileVisitResult(CtClass.doubleType);
             }
         }
 
         final Scope scope = functionCompileState.scope();
-        final Value objectValue = objectExpr.visit(new ExpressionVisitor<Value>() {
+        final Value objectValue = objectExpr.visit(new ExpressionVisitor<>() {
             @Override
-            public Value visitIdentifier(final IdentifierExpression expression) {
+            public Value visitIdentifier(final IdentifierExpression expression, final Context ctx) {
                 final String name = expression.name();
                 return scope.get(name);
             }
 
             @Override
-            public Value visitAccess(final AccessExpression expression) {
+            public Value visitAccess(final AccessExpression expression, final Context ctx) {
                 final Value object = expression.object().visit(this);
                 if (object instanceof ObjectValue) {
                     return ((ObjectValue) object).get(expression.property());
                 } else {
-                    return NumberValue.zero();
+                    return DoubleValue.ZERO;
                 }
             }
 
             @Override
-            public Value visit(final Expression expression) {
-                return NumberValue.zero();
+            public Value visit(final Expression expression, final Context ctx) {
+                return DoubleValue.ZERO;
             }
         });
 
@@ -576,19 +530,25 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                 if (javaFieldBinding == null) {
                     // push zero only
                     bytecode.addDconst(0D);
+                    return new CompileVisitResult(CtClass.doubleType);
                 } else if (javaFieldBinding.constant()) {
                     // inline const
                     bytecode.addDconst(javaFieldBinding.get().getAsNumber());
+                    return new CompileVisitResult(CtClass.doubleType);
                 } else {
                     // get field
                     final Field field = javaFieldBinding.field();
                     if (Modifier.isStatic(field.getModifiers())) {
                         try {
+                            CtClass fieldCtType = classPool.get(field.getType().toString());
+
                             bytecode.addGetstatic(
                                     classPool.get(field.getDeclaringClass().getName()),
                                     field.getName(),
-                                    Descriptor.of(field.getType().toString())
+                                    Descriptor.of(fieldCtType)
                             );
+
+                            return new CompileVisitResult(fieldCtType);
                         } catch (final NotFoundException ignored) {
                         }
                     }
@@ -600,33 +560,32 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
     }
 
     @Override
-    public @Nullable CompileVisitResult visitCall(final CallExpression expression) {
+    public CompileVisitResult visitCall(final CallExpression expression, final CompilingContext ctx) {
         final Scope scope = functionCompileState.scope();
         final Expression functionExpr = expression.function();
 
-        final Value functionValue = functionExpr.visit(new ExpressionVisitor<Value>() {
+        final Value functionValue = functionExpr.visit(new ExpressionVisitor<>() {
             @Override
-            public Value visitIdentifier(final IdentifierExpression expression) {
+            public Value visitIdentifier(final IdentifierExpression expression, final Context ctx) {
                 final String name = expression.name();
                 return scope.get(name);
             }
 
             @Override
-            public Value visitAccess(final AccessExpression expression) {
+            public Value visitAccess(final AccessExpression expression, final Context ctx) {
                 final Value object = expression.object().visit(this);
                 if (object instanceof ObjectValue) {
                     return ((ObjectValue) object).get(expression.property());
                 } else {
-                    return NumberValue.zero();
+                    return DoubleValue.ZERO;
                 }
             }
 
             @Override
-            public Value visit(final Expression expression) {
-                return NumberValue.zero();
+            public Value visit(final Expression expression, final Context ctx) {
+                return DoubleValue.ZERO;
             }
         });
-
         if (!(functionValue instanceof Function<?>)) {
             // not a function, just add 0
             bytecode.addDconst(0D);
@@ -684,9 +643,7 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
                     continue;
                 }
 
-                // Set the expected type, then load
-                expectedType = ctParameters[i];
-                it.next().visit(this);
+                it.next().visit(this, new CompilingContext(ctParameters[i]));
             }
 
             final CtClass nativeMethodDeclaringCtClass;
@@ -721,20 +678,27 @@ final class MolangCompilingVisitor implements ExpressionVisitor<@Nullable Compil
             }
 
             if (nativeMethod.getReturnType() == void.class) {
-                if (expectedType != CtClass.voidType) {
-                    bytecode.addConstZero(expectedType);
+                if (ctx.expectedType != CtClass.voidType) {
+                    bytecode.addConstZero(ctx.expectedType);
                 }
-            } else if (!nativeMethod.getReturnType().getName().equals(expectedType.getName())) {
-                JavassistUtil.addCast(bytecode, ctReturnType, expectedType);
+            } else if (!nativeMethod.getReturnType().getName().equals(ctx.expectedType.getName())) {
+                JavassistUtil.addCast(bytecode, ctReturnType, ctx.expectedType);
             }
+
+            return new CompileVisitResult(ctx.expectedType);
         } else {
             throw new UnsupportedOperationException("Not supporting non-Java functions yet");
         }
-        return null;
     }
 
     @Override
-    public CompileVisitResult visit(final Expression expression) {
+    public CompileVisitResult visit(final Expression expression, final CompilingContext ctx) {
         throw new UnsupportedOperationException("Unsupported expression type: " + expression);
+    }
+
+    private record LocalVar(CtClass type, int index) {
+    }
+
+    public record CompilingContext(@Nullable CtClass expectedType) implements Context {
     }
 }

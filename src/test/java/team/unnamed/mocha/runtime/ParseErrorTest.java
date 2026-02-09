@@ -26,8 +26,10 @@ package team.unnamed.mocha.runtime;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
+import team.unnamed.mocha.parser.ParseException;
 import team.unnamed.mocha.runtime.binding.Binding;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,14 +37,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ParseErrorTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         engine.bind(QueryImpl.class);
 
-        engine.handleParseExceptions(e -> assertEquals("Found error token: Unexpected token '\"', expected single quote (') to start a string literal\n\tat line 1, column 11", e.getMessage()));
-
-        // should error since strings only allow single quotes
-        engine.eval("query.log(\"Hello world!\");");
+        try {
+            // should error since strings only allow single quotes
+            engine.eval("query.log(\"Hello world!\");");
+        } catch (ParseException e) {
+            assertEquals("Found error token: Unexpected token '\"', expected single quote (') to start a string literal\n\tat line 1, column 11", e.getMessage());
+        }
     }
 
     @Binding({"query", "q"})

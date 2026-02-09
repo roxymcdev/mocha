@@ -21,33 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package team.unnamed.mocha.runtime.jvm;
+package team.unnamed.mocha.runtime.value;
 
-import com.google.common.reflect.TypeToken;
-import org.junit.jupiter.api.Test;
-import team.unnamed.mocha.MochaEngine;
-import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
+import java.util.Iterator;
+import java.util.List;
 
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class TypeTokenMolangCompilerTest {
-    @Test
-    void test() throws IOException {
-        final MochaEngine<?> engine = MochaEngine.createStandard();
-
-        final ScriptType<Number> script = engine.compile("1", new TypeToken<>() {});
-        assertEquals(1, script.eval().intValue());
-
-        final ScriptType<Object> script2 = engine.compile("'Hello, World!'", new TypeToken<>() {});
-        assertEquals("Hello, World!", script2.eval());
-
-        final ScriptType<Boolean> script3 = engine.compile("true", new TypeToken<>() {});
-        assertEquals(true, script3.eval());
+record ArrayValueImpl(List<Value> valueList) implements ArrayValue {
+    ArrayValueImpl {
+        valueList = List.copyOf(valueList);
     }
 
-    public interface ScriptType<T> extends MochaCompiledFunction {
-        T eval();
+    @Override
+    public Value[] values() {
+        return valueList.toArray(Value[]::new);
+    }
+
+    @Override
+    public Iterator<Value> iterator() {
+        return valueList.iterator();
     }
 }

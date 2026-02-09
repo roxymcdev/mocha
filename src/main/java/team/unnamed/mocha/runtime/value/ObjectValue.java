@@ -69,20 +69,20 @@ public non-sealed interface ObjectValue extends Value {
 
     // :) overloads
     default void setFunction(final String name, final DoubleFunction1 function) {
-        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(
+        set(name, (Function<?>) (ctx, args) -> DoubleValue.of(function.apply(
                 requireNonNull(args.next().eval(), "arg 0").getAsNumber())
         ));
     }
 
     default void setFunction(final String name, final DoubleFunction2 function) {
-        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(
+        set(name, (Function<?>) (ctx, args) -> DoubleValue.of(function.apply(
                 requireNonNull(args.next().eval(), "arg 0").getAsNumber(),
                 requireNonNull(args.next().eval(), "arg 1").getAsNumber())
         ));
     }
 
     default void setFunction(final String name, final DoubleFunction3 function) {
-        set(name, (Function<?>) (ctx, args) -> NumberValue.of(function.apply(
+        set(name, (Function<?>) (ctx, args) -> DoubleValue.of(function.apply(
                 requireNonNull(args.next().eval(), "arg 0").getAsNumber(),
                 requireNonNull(args.next().eval(), "arg 1").getAsNumber(),
                 requireNonNull(args.next().eval(), "arg 2").getAsNumber())

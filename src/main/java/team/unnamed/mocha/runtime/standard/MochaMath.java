@@ -26,7 +26,7 @@ package team.unnamed.mocha.runtime.standard;
 import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.runtime.binding.BindExternalFunction;
 import team.unnamed.mocha.runtime.binding.Binding;
-import team.unnamed.mocha.runtime.value.NumberValue;
+import team.unnamed.mocha.runtime.value.DoubleValue;
 import team.unnamed.mocha.runtime.value.ObjectProperty;
 import team.unnamed.mocha.runtime.value.ObjectValue;
 import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
@@ -81,7 +81,7 @@ public final class MochaMath implements ObjectValue {
         setFunction("min", Math::min);
         setFunction("min_angle", MochaMath::minAngle);
         setFunction("mod", MochaMath::mod);
-        entries.put("pi", ObjectProperty.property(NumberValue.of(Math.PI), true));
+        entries.put("pi", ObjectProperty.property(DoubleValue.of(Math.PI), true));
         setFunction("pow", Math::pow);
         setFunction("random", MochaMath::random);
         setFunction("random_integer", MochaMath::randomInteger);
@@ -100,12 +100,12 @@ public final class MochaMath implements ObjectValue {
 
     @Binding(value = "acos", skipChecking = true, pure = true)
     public static double acos(final double value) {
-        return NumberValue.normalize(Math.acos(value) / RADIAN);
+        return DoubleValue.normalize(Math.acos(value) / RADIAN);
     }
 
     @Binding(value = "asin", skipChecking = true, pure = true)
     public static double asin(final double value) {
-        return NumberValue.normalize(Math.asin(value) / RADIAN);
+        return DoubleValue.normalize(Math.asin(value) / RADIAN);
     }
 
     @Binding(value = "atan", pure = true)

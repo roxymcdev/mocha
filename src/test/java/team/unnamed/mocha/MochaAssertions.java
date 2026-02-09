@@ -26,7 +26,11 @@ package team.unnamed.mocha;
 import org.jetbrains.annotations.NotNull;
 import team.unnamed.mocha.parser.ParseException;
 import team.unnamed.mocha.parser.ast.Expression;
+import team.unnamed.mocha.runtime.value.ArrayValue;
+import team.unnamed.mocha.runtime.value.SingleValue;
+import team.unnamed.mocha.runtime.value.Value;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -53,14 +57,14 @@ public final class MochaAssertions {
                 expressions2);
     }
 
-    public static void assertCreateTree(final @NotNull String expr, final @NotNull Expression @NotNull ... expressions) {
+    public static void assertCreateTree(final @NotNull String expr, final @NotNull Expression @NotNull ... expressions) throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         final List<Expression> parsed;
         try {
             parsed = engine.parse(expr);
         } catch (final ParseException e) {
-            fail("Failed to parse expression: '" + expr + "'", e);
-            return;
+            fail("Failed to parse expression: '" + expr + "'");
+            throw e;
         }
         assertEquals(
                 Arrays.asList(expressions),
@@ -71,7 +75,7 @@ public final class MochaAssertions {
         );
     }
 
-    public static void assertParseError(final @NotNull String expr, final int column) {
+    public static void assertParseError(final @NotNull String expr, final int column) throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         try {
             final List<Expression> expressions = engine.parse(expr);
@@ -81,23 +85,39 @@ public final class MochaAssertions {
         }
     }
 
-    public static void assertEvaluates(final double expected, final @NotNull String expr, final @NotNull UnaryOperator<MochaEngine<?>> configurer) {
+    public static void assertEvaluates(final double expected, final @NotNull String expr, final @NotNull UnaryOperator<MochaEngine<?>> configurer) throws IOException {
         MochaEngine<?> engine = MochaEngine.createStandard();
         engine = configurer.apply(engine);
-        final double result = engine.eval(expr);
+        final double result = engine.eval(expr).getAsNumber();
         assertEquals(expected, result, 0.0001, () -> "Expression: '" + expr + "' evaluated to " + result + ", expected " + expected);
     }
 
-    public static void assertEvaluates(final double expected, final @NotNull String expr) {
+    public static void assertEvaluates(final double expected, final @NotNull String expr) throws IOException {
         assertEvaluates(expected, expr, engine -> engine);
     }
 
-    public static void assertEvaluatesAndCompiles(final double expected, final @NotNull String expr) {
+    public static void assertEvaluatesAndCompiles(final double expected, final @NotNull String expr) throws IOException {
         final MochaEngine<?> engine = MochaEngine.createStandard();
-        final double result = engine.eval(expr);
+
+        final double result = engine.eval(expr).getAsNumber();
         assertEquals(expected, result, 0.0001, () -> "(Interpreted) expression: '" + expr + "' evaluated to " + result + ", expected " + expected);
 
-        final double compiledResult = engine.compile(expr).evaluate();
+        final double compiledResult = (double) engine.compile(expr).evaluate();
         assertEquals(expected, compiledResult, 0.0001, () -> "(Compiled) expression: '" + expr + "' evaluated to " + compiledResult + ", expected " + expected);
+    }
+
+    public static void assertEvaluatesAndCompiles(final Object expected, final @NotNull String expr) throws IOException {
+        final MochaEngine<?> engine = MochaEngine.createStandard();
+
+        Value evalValue = engine.eval(expr);
+        final Object result = switch(evalValue) {
+            case ArrayValue value -> value.values();
+            case SingleValue<?> value -> value.value();
+            default -> throw new IllegalStateException("Unexpected value: " + evalValue);
+        };
+        assertEquals(expected, result, () -> "(Interpreted) expression: '" + expr + "' evaluated to " + result + ", expected " + expected);
+
+        final Object compiledResult = engine.compile(expr).evaluate();
+        assertEquals(expected, compiledResult, () -> "(Compiled) expression: '" + expr + "' evaluated to " + compiledResult + ", expected " + expected);
     }
 }

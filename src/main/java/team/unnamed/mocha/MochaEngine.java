@@ -38,16 +38,14 @@ import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 import team.unnamed.mocha.runtime.standard.MochaMath;
 import team.unnamed.mocha.runtime.value.MutableObjectBinding;
 import team.unnamed.mocha.runtime.value.ObjectValue;
+import team.unnamed.mocha.runtime.value.Value;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * The engine's entry class. Provides methods to evaluate
@@ -124,13 +122,9 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @return The list of parsed expressions
      * @throws ParseException If parsing fails
      */
-    default List<Expression> parse(final String string) throws ParseException {
+    default List<Expression> parse(final String string) throws IOException {
         try (final StringReader reader = new StringReader(string)) {
             return parse(reader);
-        } catch (final ParseException e) {
-            throw e;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Error occurred reading the source code: '" + string + "'", e);
         }
     }
 
@@ -144,9 +138,9 @@ public interface MochaEngine<T extends @Nullable Object> {
      *
      * @param expressions The expressions to evaluate.
      * @return The result of the evaluation.
-     * @since 3.0.0
+     * @since 4.0
      */
-    double eval(final List<Expression> expressions);
+    Value eval(final List<Expression> expressions);
 
     /**
      * Parses and evaluates the given Molang source.
@@ -161,9 +155,11 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @return The result of the evaluation.
      * @see #parse(Reader)
      * @see #eval(List)
-     * @since 3.0.0
+     * @since 4.0
      */
-    double eval(final Reader source);
+    default Value eval(final Reader source) throws IOException {
+        return eval(parse(source));
+    }
 
     /**
      * Parses and evaluates the given Molang source.
@@ -178,13 +174,10 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @return The result of the evaluation.
      * @see #parse(String)
      * @see #eval(List)
-     * @since 3.0.0
+     * @since 4.0
      */
-    default double eval(final String source) {
-        requireNonNull(source, "script");
-        try (final StringReader reader = new StringReader(source)) {
-            return eval(reader);
-        }
+    default Value eval(final String source) throws IOException {
+        return eval(parse(source));
     }
 
     /**
@@ -201,9 +194,12 @@ public interface MochaEngine<T extends @Nullable Object> {
      *
      * @param reader The reader to read the data from
      * @return The cached, interpretable function
-     * @since 3.0.0
+     * @since 4.0
      */
-    MochaFunction prepareEval(final Reader reader);
+    default MochaFunction prepareEval(final Reader reader) throws IOException {
+        final List<Expression> parsed = parse(reader);
+        return () -> eval(parsed);
+    }
 
     /**
      * Parses the given {@code string} and returns a cached,
@@ -216,9 +212,9 @@ public interface MochaEngine<T extends @Nullable Object> {
      *
      * @param string The MoLang string
      * @return The cached, interpretable function
-     * @since 3.0.0
+     * @since 4.0
      */
-    default MochaFunction prepareEval(final String string) {
+    default MochaFunction prepareEval(final String string) throws IOException {
         try (final StringReader reader = new StringReader(string)) {
             return prepareEval(reader);
         }
@@ -229,33 +225,28 @@ public interface MochaEngine<T extends @Nullable Object> {
 
     /**
      * Compiles the given code into a Molang function
-     * that can take arguments.
+     * that takes no arguments.
      *
-     * @param reader        The code to compile.
-     * @param interfaceType The interface to implement, must
-     *                      have a single method.
+     * @param reader The code to compile.
      * @return The compiled function.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default <F extends MochaCompiledFunction> F compile(final Reader reader, final Class<F> interfaceType) {
-        return compile(reader, TypeToken.of(interfaceType));
+    default MochaFunction compile(final Reader reader) throws IOException {
+        return compile(reader, MochaFunction.class);
     }
 
     /**
      * Compiles the given code into a Molang function
      * that can take arguments.
      *
-     * @param code          The code to compile.
+     * @param reader        The code to compile.
      * @param interfaceType The interface to implement, must
      *                      have a single method.
      * @return The compiled function.
-     * @since 3.0.0
+     * @since 4.0
      */
-    default <F extends MochaCompiledFunction> F compile(final String code, final Class<F> interfaceType) {
-        requireNonNull(code, "code");
-        try (final StringReader reader = new StringReader(code)) {
-            return compile(reader, interfaceType);
-        }
+    default <F extends MochaCompiledFunction> F compile(final Reader reader, final Class<F> interfaceType) throws IOException {
+        return compile(reader, TypeToken.of(interfaceType));
     }
 
     /**
@@ -269,9 +260,7 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @since 4.0
      */
     @SuppressWarnings("unchecked")
-    default MochaCompiledFunction compile(final Reader reader, final Type interfaceType) {
-        requireNonNull(interfaceType, "type");
-
+    default MochaCompiledFunction compile(final Reader reader, final Type interfaceType) throws IOException {
         TypeToken<?> typeToken = TypeToken.of(interfaceType);
 
         if (!typeToken.isSubtypeOf(MochaCompiledFunction.class)) {
@@ -285,59 +274,13 @@ public interface MochaEngine<T extends @Nullable Object> {
      * Compiles the given code into a Molang function
      * that can take arguments.
      *
-     * @param code          The code to compile.
-     * @param interfaceType The interface to implement, must
-     *                      have a single method and implement {@link MochaCompiledFunction}.
-     * @return The compiled function.
-     * @since 4.0
-     */
-    default MochaCompiledFunction compile(final String code, final Type interfaceType) {
-        requireNonNull(code, "code");
-        try (final StringReader reader = new StringReader(code)) {
-            return compile(reader, interfaceType);
-        }
-    }
-
-    /**
-     * Compiles the given code into a Molang function
-     * that can take arguments.
-     *
      * @param reader        The code to compile.
      * @param interfaceType The interface to implement, must
      *                      have a single method.
      * @return The compiled function.
      * @since 4.0
      */
-    <F extends MochaCompiledFunction> F compile(final Reader reader, final TypeToken<F> interfaceType);
-
-    /**
-     * Compiles the given code into a Molang function
-     * that can take arguments.
-     *
-     * @param code          The code to compile.
-     * @param interfaceType The interface to implement, must
-     *                      have a single method.
-     * @return The compiled function.
-     * @since 4.0
-     */
-    default <F extends MochaCompiledFunction> F compile(final String code, final TypeToken<F> interfaceType) {
-        requireNonNull(code, "code");
-        try (final StringReader reader = new StringReader(code)) {
-            return compile(reader, interfaceType);
-        }
-    }
-
-    /**
-     * Compiles the given code into a Molang function
-     * that takes no arguments.
-     *
-     * @param reader The code to compile.
-     * @return The compiled function.
-     * @since 3.0.0
-     */
-    default MochaFunction compile(final Reader reader) {
-        return compile(reader, MochaFunction.class);
-    }
+    <F extends MochaCompiledFunction> F compile(final Reader reader, final TypeToken<F> interfaceType) throws IOException;
 
     /**
      * Compiles the given code into a Molang function
@@ -347,10 +290,55 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @return The compiled function.
      * @since 3.0.0
      */
-    default MochaFunction compile(final String code) {
-        requireNonNull(code, "code");
+    default MochaFunction compile(final String code) throws IOException {
+        return compile(code, MochaFunction.class);
+    }
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param code          The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method.
+     * @return The compiled function.
+     * @since 4.0
+     */
+    default <F extends MochaCompiledFunction> F compile(final String code, final Class<F> interfaceType) throws IOException {
         try (final StringReader reader = new StringReader(code)) {
-            return compile(reader);
+            return compile(reader, interfaceType);
+        }
+    }
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param code          The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method and implement {@link MochaCompiledFunction}.
+     * @return The compiled function.
+     * @since 4.0
+     */
+    default MochaCompiledFunction compile(final String code, final Type interfaceType) throws IOException {
+        try (final StringReader reader = new StringReader(code)) {
+            return compile(reader, interfaceType);
+        }
+    }
+
+    /**
+     * Compiles the given code into a Molang function
+     * that can take arguments.
+     *
+     * @param code          The code to compile.
+     * @param interfaceType The interface to implement, must
+     *                      have a single method.
+     * @return The compiled function.
+     * @since 4.0
+     */
+    default <F extends MochaCompiledFunction> F compile(final String code, final TypeToken<F> interfaceType) throws IOException {
+        try (final StringReader reader = new StringReader(code)) {
+            return compile(reader, interfaceType);
         }
     }
 
@@ -359,8 +347,8 @@ public interface MochaEngine<T extends @Nullable Object> {
      * the compiler.
      *
      * @return The compiler class pool
-     * @since 3.0.0
      * @apiNote This method might be removed in a future minor version.
+     * @since 3.0.0
      */
     @ApiStatus.Internal
     ClassPool classPool();
@@ -409,7 +397,7 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @param <B>      The instance's type.
      * @since 3.0.0
      */
-    <B> void bindInstance(final Class<? super B> clazz, final B instance, final String name, final String ... aliases);
+    <B> void bindInstance(final Class<? super B> clazz, final B instance, final String name, final String... aliases);
     //#endregion
 
     //#region CONFIGURATION API
@@ -436,22 +424,6 @@ public interface MochaEngine<T extends @Nullable Object> {
     MochaEngine<T> warnOnReflectiveFunctionUsage(final boolean warnOnReflectiveFunctionUsage);
 
     /**
-     * Sets the {@link ParseException} handler. This handler will be called
-     * whenever an internal call to the {@link #parse} method fails. These
-     * internal calls commonly include interpreting or compiling code.
-     *
-     * <p>Usually useful for logging/debugging purposes.</p>
-     *
-     * <p>By default this is null.</p>
-     *
-     * @param exceptionHandler The new parse exception handler
-     * @return This engine instance
-     * @since 3.0.0
-     */
-    @Contract("_ -> this")
-    MochaEngine<T> handleParseExceptions(final @Nullable Consumer<ParseException> exceptionHandler);
-
-    /**
      * Sets the post-compile function, which is called after a script
      * is compiled to a new class, and before it is loaded. The received
      * argument is the class bytecode, which can be written to a file for
@@ -464,7 +436,7 @@ public interface MochaEngine<T extends @Nullable Object> {
      * @since 3.0.0
      */
     @Contract("_ -> this")
-    MochaEngine<T> postCompile(final @Nullable Consumer<byte []> bytecodeConsumer);
+    MochaEngine<T> postCompile(final @Nullable Consumer<byte[]> bytecodeConsumer);
     //#endregion
 
     /**

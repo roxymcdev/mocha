@@ -24,6 +24,7 @@
 package team.unnamed.mocha.runtime;
 
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
+import team.unnamed.mocha.runtime.value.Value;
 
 /**
  * A {@link MochaCompiledFunction} that can be evaluated without arguments.
@@ -33,18 +34,18 @@ import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 @FunctionalInterface
 public interface MochaFunction extends MochaCompiledFunction {
     static MochaFunction nop() {
-        return NopMochaFunctionHolder.NOP;
+        final class Holder {
+            static final MochaFunction NOP = Value::nil;
+        }
+
+        return Holder.NOP;
     }
 
     /**
      * Evaluates this function.
      *
      * @return The result of the evaluation.
-     * @since 3.0.0
+     * @since 4.0
      */
-    double evaluate();
-}
-
-final class NopMochaFunctionHolder {
-    static final MochaFunction NOP = () -> 0D;
+    Object evaluate();
 }

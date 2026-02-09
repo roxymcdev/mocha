@@ -24,13 +24,9 @@
 package team.unnamed.mocha.parser;
 
 import org.junit.jupiter.api.Test;
-import team.unnamed.mocha.parser.ast.AccessExpression;
-import team.unnamed.mocha.parser.ast.ArrayAccessExpression;
-import team.unnamed.mocha.parser.ast.BinaryExpression;
-import team.unnamed.mocha.parser.ast.CallExpression;
-import team.unnamed.mocha.parser.ast.DoubleExpression;
-import team.unnamed.mocha.parser.ast.IdentifierExpression;
+import team.unnamed.mocha.parser.ast.*;
 
+import java.io.IOException;
 import java.util.Collections;
 
 import static team.unnamed.mocha.MochaAssertions.assertCreateTree;
@@ -38,7 +34,7 @@ import static team.unnamed.mocha.MochaAssertions.assertParseError;
 
 class ArrayAccessParseTest {
     @Test
-    void test() {
+    void test() throws IOException {
         assertCreateTree("materials[0]", new ArrayAccessExpression(
                 new IdentifierExpression("materials"),
                 new DoubleExpression(0D)
@@ -79,7 +75,7 @@ class ArrayAccessParseTest {
     }
 
     @Test
-    void test_incorrect() {
+    void test_incorrect() throws IOException {
         // unexpected COMMA, expected RBRACKET
         assertParseError("array.my_geos[0, 1]", 16);
 

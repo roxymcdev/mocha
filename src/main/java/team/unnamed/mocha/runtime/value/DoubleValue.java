@@ -21,33 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package team.unnamed.mocha.runtime.jvm;
+package team.unnamed.mocha.runtime.value;
 
-import com.google.common.reflect.TypeToken;
-import org.junit.jupiter.api.Test;
-import team.unnamed.mocha.MochaEngine;
-import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
+public sealed interface DoubleValue extends SingleValue<Double> permits DoubleValueImpl {
+    DoubleValue ZERO = of(0D);
+    DoubleValue ONE = of(1D);
 
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class TypeTokenMolangCompilerTest {
-    @Test
-    void test() throws IOException {
-        final MochaEngine<?> engine = MochaEngine.createStandard();
-
-        final ScriptType<Number> script = engine.compile("1", new TypeToken<>() {});
-        assertEquals(1, script.eval().intValue());
-
-        final ScriptType<Object> script2 = engine.compile("'Hello, World!'", new TypeToken<>() {});
-        assertEquals("Hello, World!", script2.eval());
-
-        final ScriptType<Boolean> script3 = engine.compile("true", new TypeToken<>() {});
-        assertEquals(true, script3.eval());
+    static DoubleValue of(final double value) {
+        return new DoubleValueImpl(value);
     }
 
-    public interface ScriptType<T> extends MochaCompiledFunction {
-        T eval();
+    static DoubleValue of(final boolean value) {
+        return value ? ONE : ZERO;
+    }
+
+    static double normalize(final double value) {
+        return Double.isNaN(value) || Double.isInfinite(value) ? 0D : value;
+    }
+
+    @Override
+    default Double value() {
+        return doubleValue();
+    }
+
+    double doubleValue();
+
+    default boolean booleanValue() {
+        return doubleValue() != 0D;
     }
 }

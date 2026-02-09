@@ -26,29 +26,9 @@ package team.unnamed.mocha.runtime;
 import javassist.CtClass;
 import org.jspecify.annotations.Nullable;
 
-final class CompileVisitResult {
-    private final @Nullable CtClass lastPushedType;
-    private final boolean returned;
-
-    public CompileVisitResult(final @Nullable CtClass lastPushedType, final boolean returned) {
-        this.lastPushedType = lastPushedType;
-        this.returned = returned;
-    }
-
-    public CompileVisitResult(final @Nullable CtClass lastPushedType) {
+record CompileVisitResult(@Nullable CtClass lastPushedType, boolean returned) {
+    CompileVisitResult(final @Nullable CtClass lastPushedType) {
         this(lastPushedType, false);
-    }
-
-    public boolean returned() {
-        return returned;
-    }
-
-    public @Nullable CtClass lastPushedType() {
-        return lastPushedType;
-    }
-
-    public boolean isString() {
-        return lastPushedType != null && lastPushedType.getName().equals("java.lang.String");
     }
 
     public boolean is(final @Nullable CtClass type) {

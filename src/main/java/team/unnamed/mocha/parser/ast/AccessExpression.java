@@ -77,8 +77,8 @@ public final class AccessExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final ExpressionVisitor<R> visitor) {
-        return visitor.visitAccess(this);
+    public <R, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx) {
+        return visitor.visitAccess(this, ctx);
     }
 
     @Override

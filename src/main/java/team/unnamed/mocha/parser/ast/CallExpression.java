@@ -74,8 +74,8 @@ public final class CallExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final ExpressionVisitor<R> visitor) {
-        return visitor.visitCall(this);
+    public <R, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx) {
+        return visitor.visitCall(this, ctx);
     }
 
     @Override

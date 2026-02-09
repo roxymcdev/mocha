@@ -105,13 +105,11 @@ public final class MolangCompiler {
             throw new IllegalArgumentException("Target type must have a method to implement: " + clazz.getName());
         }
 
-        final Map<String, Integer> argumentParameterIndexes = new CaseInsensitiveStringHashMap<>();
-        final CtClass[] ctParameters;
+        final Map<String, CtClass> parametersCtTypes = new CaseInsensitiveStringHashMap<>();
 
         // check method parameter types
         {
             final Parameter[] parameters = implementedMethod.getParameters();
-            ctParameters = new CtClass[parameters.length];
 
             for (int i = 0; i < parameters.length; ++i) {
                 final Parameter parameter = parameters[i];
@@ -127,9 +125,11 @@ public final class MolangCompiler {
                             + ") must be annotated with @Named and specify a name");
                 }
 
-                argumentParameterIndexes.put(name, i);
                 try {
-                    ctParameters[i] = classPool.get(typeToken.resolveType(parameter.getParameterizedType()).getRawType().getName());
+                    Class<?> parameterType = typeToken.resolveType(parameter.getParameterizedType()).getRawType();
+                    CtClass parameterCtType = classPool.get(parameterType.getName());
+
+                    parametersCtTypes.put(name, parameterCtType);
                 } catch (NotFoundException e) {
                     throw new RuntimeException(e);
                 }
@@ -148,12 +148,19 @@ public final class MolangCompiler {
         final CtClass returnCtType = JavassistUtil.getClassUnchecked(classPool, returnType);
 
         final Bytecode bytecode = new Bytecode(scriptCtClass.getClassFile().getConstPool());
-        final FunctionCompileState compileState = new FunctionCompileState(this, typeToken, classPool, scriptCtClass, bytecode, implementedMethod, scope, argumentParameterIndexes);
+        final FunctionCompileState compileState = new FunctionCompileState(
+                this,
+                classPool,
+                scriptCtClass,
+                bytecode,
+                parametersCtTypes,
+                scope
+        );
 
         // compute initial max locals
         {
             int maxLocals = 1; // 1: this
-            for (final CtClass paramType : ctParameters) {
+            for (final CtClass paramType : parametersCtTypes.values()) {
                 if (paramType == CtClass.doubleType || paramType == CtClass.longType) {
                     maxLocals += 2; // doubles and longs take 2 places
                 } else {
@@ -169,32 +176,38 @@ public final class MolangCompiler {
             bytecode.addReturn(returnCtType);
         } else {
             final MolangCompilingVisitor compiler = new MolangCompilingVisitor(compileState);
+            final MolangCompilingVisitor.CompilingContext compilerCtx = new MolangCompilingVisitor.CompilingContext(returnCtType);
             CompileVisitResult lastVisitResult = null;
 
             final ExpressionInliner inliner = new ExpressionInliner(new ExpressionInterpreter<>(null, scope), scope);
 
             for (final Expression expression : expressions) {
-                lastVisitResult = expression.visit(inliner).visit(compiler);
+                lastVisitResult = expression.visit(inliner).visit(compiler, compilerCtx);
             }
 
             if (lastVisitResult == null || !lastVisitResult.returned()) {
                 CtClass lastPushedType = lastVisitResult != null ? lastVisitResult.lastPushedType() : null;
-                if (lastPushedType == null || !JavassistUtil.isSubtypeOf(lastPushedType, returnCtType)) {
-                    JavassistUtil.addCast(
-                            bytecode,
-                            lastPushedType == null ? CtClass.doubleType : lastPushedType,
-                            returnCtType
-                    );
-                }
 
-                compiler.endVisit();
+                JavassistUtil.addCast(
+                        bytecode,
+                        lastPushedType == null ? returnCtType : lastPushedType,
+                        returnCtType
+                );
+
+                bytecode.addReturn(returnCtType);
             }
         }
 
         bytecode.setMaxLocals(compileState.maxLocals());
 
-        CtClass rawReturnCtType = JavassistUtil.getClassUnchecked(classPool, implementedMethod.getReturnType());
-        final MethodInfo method = new MethodInfo(scriptCtClass.getClassFile().getConstPool(), implementedMethod.getName(), Descriptor.ofMethod(rawReturnCtType, ctParameters));
+        final MethodInfo method = new MethodInfo(
+                scriptCtClass.getClassFile().getConstPool(),
+                implementedMethod.getName(),
+                Descriptor.ofMethod(
+                        JavassistUtil.getClassUnchecked(classPool, implementedMethod.getReturnType()),
+                        parametersCtTypes.values().toArray(CtClass[]::new)
+                )
+        );
         method.setAccessFlags(Modifier.PUBLIC | Modifier.FINAL);
         method.setCodeAttribute(bytecode.toCodeAttribute());
         final StackMapTable stackMapTable;
@@ -203,7 +216,7 @@ public final class MolangCompiler {
             method.getCodeAttribute().computeMaxStack();
             stackMapTable = MapMaker.make(classPool, method);
         } catch (final BadBytecode e) {
-            throw new IllegalStateException("Generated bad bytecode, open an issue at https://github.com/unnamed/mocha/issues", e);
+            throw new IllegalStateException("Generated bad bytecode, open an issue at https://github.com/roxymcdev/mocha/issues", e);
         }
 
         if (stackMapTable != null) {

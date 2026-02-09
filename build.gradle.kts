@@ -34,15 +34,14 @@ dependencies {
 }
 
 tasks {
-    register<Exec>("generateExpectations") {
+    val generateExpectations by registering(Exec::class) {
         commandLine = listOf("node", "scripts/generate_expectations.js")
     }
+
     test {
-        dependsOn("generateExpectations")
+        dependsOn(generateExpectations)
     }
-    javadoc {
-        isFailOnError = false
-    }
+
     withType<Sign>().configureEach {
         enabled = false
     }
@@ -50,7 +49,7 @@ tasks {
 
 indra {
     javaVersions {
-        target(17)
+        target(21)
     }
 
     publishReleasesTo("roxymc", "https://repo.roxymc.net/releases")

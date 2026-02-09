@@ -102,8 +102,8 @@ public final class BinaryExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final ExpressionVisitor<R> visitor) {
-        return visitor.visitBinary(this);
+    public <R, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx) {
+        return visitor.visitBinary(this, ctx);
     }
 
     @Override

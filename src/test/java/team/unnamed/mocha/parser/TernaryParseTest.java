@@ -24,20 +24,16 @@
 package team.unnamed.mocha.parser;
 
 import org.junit.jupiter.api.Test;
-import team.unnamed.mocha.parser.ast.AccessExpression;
-import team.unnamed.mocha.parser.ast.BinaryExpression;
-import team.unnamed.mocha.parser.ast.CallExpression;
-import team.unnamed.mocha.parser.ast.DoubleExpression;
-import team.unnamed.mocha.parser.ast.IdentifierExpression;
-import team.unnamed.mocha.parser.ast.TernaryConditionalExpression;
+import team.unnamed.mocha.parser.ast.*;
 
+import java.io.IOException;
 import java.util.Collections;
 
 import static team.unnamed.mocha.MochaAssertions.assertCreateTree;
 
 class TernaryParseTest {
     @Test
-    void test() {
+    void test() throws IOException {
         assertCreateTree("query.mark_variant == 1 ? Geometry.robot : Geometry.default", new TernaryConditionalExpression(
                 new BinaryExpression(BinaryExpression.Op.EQ, new AccessExpression(
                         new IdentifierExpression("query"),

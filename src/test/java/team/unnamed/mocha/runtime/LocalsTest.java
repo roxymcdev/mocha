@@ -21,33 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package team.unnamed.mocha.runtime.jvm;
+package team.unnamed.mocha.runtime;
 
-import com.google.common.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
-import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static team.unnamed.mocha.MochaAssertions.assertEvaluatesAndCompiles;
 
-public class TypeTokenMolangCompilerTest {
+public class LocalsTest {
     @Test
-    void test() throws IOException {
-        final MochaEngine<?> engine = MochaEngine.createStandard();
-
-        final ScriptType<Number> script = engine.compile("1", new TypeToken<>() {});
-        assertEquals(1, script.eval().intValue());
-
-        final ScriptType<Object> script2 = engine.compile("'Hello, World!'", new TypeToken<>() {});
-        assertEquals("Hello, World!", script2.eval());
-
-        final ScriptType<Boolean> script3 = engine.compile("true", new TypeToken<>() {});
-        assertEquals(true, script3.eval());
-    }
-
-    public interface ScriptType<T> extends MochaCompiledFunction {
-        T eval();
+    public void test() throws IOException {
+        assertEvaluatesAndCompiles(1D, "t.x = 1; return t.x");
+        assertEvaluatesAndCompiles("Hello, World!", "t.x = 'Hello, World!'; return t.x");
     }
 }

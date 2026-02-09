@@ -27,11 +27,13 @@ import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
 import team.unnamed.mocha.runtime.binding.Binding;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ForEachTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final String code = String.join("\n",
                 "v.sum = 0;",
                 "for_each(v.age, query.list_ages(), {",
@@ -42,7 +44,7 @@ class ForEachTest {
         final MochaEngine<?> engine = MochaEngine.createStandard();
         engine.bind(QueryImpl.class);
 
-        final double result = engine.eval(code);
+        final double result = engine.eval(code).getAsNumber();
         assertEquals(98, result);
     }
 

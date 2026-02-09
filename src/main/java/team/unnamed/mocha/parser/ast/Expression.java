@@ -47,6 +47,18 @@ public sealed interface Expression permits AccessExpression, ArrayAccessExpressi
      * @return The visit result
      * @since 3.0.0
      */
-    <R extends @Nullable Object> R visit(final ExpressionVisitor<R> visitor);
+    default <R extends @Nullable Object> R visit(final ExpressionVisitor<R, ExpressionVisitor.Context> visitor) {
+        return visit(visitor, ExpressionVisitor.Context.empty());
+    }
+
+    /**
+     * Visits this expression with the given visitor.
+     *
+     * @param <R>     The visit result return type
+     * @param visitor The expression visitor
+     * @return The visit result
+     * @since 4.0
+     */
+    <R extends @Nullable Object, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx);
 
 }

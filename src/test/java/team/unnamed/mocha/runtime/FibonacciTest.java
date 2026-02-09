@@ -26,8 +26,8 @@ package team.unnamed.mocha.runtime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
+import team.unnamed.mocha.runtime.value.DoubleValue;
 import team.unnamed.mocha.runtime.value.Function;
-import team.unnamed.mocha.runtime.value.NumberValue;
 import team.unnamed.mocha.runtime.value.ObjectProperty;
 import team.unnamed.mocha.runtime.value.ObjectValue;
 
@@ -87,12 +87,12 @@ public class FibonacciTest {
                         joiner.add(args.next().eval().getAsString());
                     }
                     stdout.println(joiner);
-                    return NumberValue.zero();
+                    return DoubleValue.ZERO;
                 }, true);
             }
             return null;
         });
-        final double result = engine.eval(code);
+        final double result = engine.eval(code).getAsNumber();
 
         assertEquals(expected, out.toString());
         assertEquals(89D, result);

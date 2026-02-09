@@ -29,6 +29,7 @@ import team.unnamed.mocha.runtime.binding.Binding;
 import team.unnamed.mocha.runtime.binding.Entity;
 import team.unnamed.mocha.runtime.value.JavaValue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArrowOperatorTest {
     @Test
-    void test() {
+    void test() throws IOException {
         final World world = new World();
         final Player self = new Player(world, 8, "Steve");
         new Player(world, 9, "Pig");
@@ -53,7 +54,7 @@ class ArrowOperatorTest {
                         + "    v.result = v.result + t.nearby->q.get_location();\n"
                         + "});\n"
                         + "return v.result;"
-        );
+        ).getAsNumber();
         assertEquals(17D, result);
 
 
@@ -63,7 +64,7 @@ class ArrowOperatorTest {
                         + "    v.result = v.result + t.nearby->q.get_location();\n"
                         + "});\n"
                         + "return v.result;"
-        );
+        ).getAsNumber();
         assertEquals(32D, result2);
     }
 

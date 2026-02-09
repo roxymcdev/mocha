@@ -53,8 +53,8 @@ public final class ExecutionScopeExpression implements Expression {
     }
 
     @Override
-    public <R> R visit(final ExpressionVisitor<R> visitor) {
-        return visitor.visitExecutionScope(this);
+    public <R, C extends ExpressionVisitor.Context> R visit(final ExpressionVisitor<R, C> visitor, final C ctx) {
+        return visitor.visitExecutionScope(this, ctx);
     }
 
     @Override

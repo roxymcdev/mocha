@@ -116,6 +116,6 @@ public final class JavaFieldBinding implements RegisteredBinding {
             throw new IllegalStateException("Could not get field value.", e);
         }
 
-        return Value.of(val);
+        return ReflectiveFunction.wrapValue(val);
     }
 }

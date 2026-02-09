@@ -27,7 +27,7 @@ import team.unnamed.mocha.parser.ast.*;
 
 import static java.util.Objects.requireNonNull;
 
-final class ExpressionInliner implements ExpressionVisitor<Expression> {
+final class ExpressionInliner implements ExpressionVisitor<Expression, ExpressionVisitor.Context> {
     private final ExpressionInterpreter<?> interpreter;
     private final Scope scope;
 
@@ -37,7 +37,7 @@ final class ExpressionInliner implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visitBinary(final BinaryExpression expression) {
+    public Expression visitBinary(final BinaryExpression expression, final Context ctx) {
         if (IsConstantExpression.test(expression, scope)) {
             // can be evaluated in compile-time
             return new DoubleExpression(expression.visit(interpreter).getAsNumber());
@@ -46,7 +46,7 @@ final class ExpressionInliner implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visitTernaryConditional(final TernaryConditionalExpression expression) {
+    public Expression visitTernaryConditional(final TernaryConditionalExpression expression, final Context ctx) {
         final Expression conditionExpr = expression.condition();
         final Expression trueExpr = expression.trueExpression();
         final Expression falseExpr = expression.falseExpression();
@@ -62,7 +62,7 @@ final class ExpressionInliner implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visitCall(final CallExpression expression) {
+    public Expression visitCall(final CallExpression expression, final Context ctx) {
         if (IsConstantExpression.test(expression, scope)) {
             // can be evaluated in compile-time
             return new DoubleExpression(expression.visit(interpreter).getAsNumber());
@@ -71,7 +71,7 @@ final class ExpressionInliner implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(final Expression expression) {
+    public Expression visit(final Expression expression, final Context ctx) {
         return expression;
     }
 }

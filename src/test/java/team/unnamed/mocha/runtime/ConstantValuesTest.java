@@ -26,9 +26,11 @@ package team.unnamed.mocha.runtime;
 import org.junit.jupiter.api.Test;
 import team.unnamed.mocha.MochaEngine;
 
+import java.io.IOException;
+
 class ConstantValuesTest {
     @Test
-    void test() {
+    void test() throws IOException {
         MochaEngine.createStandard().compile("math.abs(-5) + math.abs(5) + math.sqrt(25)");
     }
 }

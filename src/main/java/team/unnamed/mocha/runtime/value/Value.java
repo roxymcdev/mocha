@@ -23,104 +23,58 @@
  */
 package team.unnamed.mocha.runtime.value;
 
-import org.jetbrains.annotations.ApiStatus;
-import org.jspecify.annotations.Nullable;
-
-import java.lang.reflect.Array;
 import java.util.Map;
 import java.util.StringJoiner;
 
-@ApiStatus.NonExtendable
-public sealed interface Value permits ArrayValue, Function, JavaValue, NumberValue, ObjectValue, StringValue {
-    static Value of(final @Nullable Object any) {
-        if (any instanceof Value) {
-            return (Value) any;
-        } else if (any instanceof Number) {
-            return NumberValue.of(((Number) any).doubleValue());
-        } else if (any instanceof String) {
-            return StringValue.of((String) any);
-        } else if (any instanceof Boolean) {
-            return (Boolean) any ? NumberValue.of(1D) : NumberValue.zero();
-        } else {
-            if (any != null && any.getClass().isArray()) {
-                // array types
-                final int length = Array.getLength(any);
-                final Value[] values = new Value[length];
-                for (int i = 0; i < length; i++) {
-                    values[i] = of(Array.get(any, i));
-                }
-                return ArrayValue.of(values);
-            } else {
-                return NumberValue.zero();
-            }
-        }
-    }
-
-    static Value of(final boolean bool) {
-        return bool ? NumberValue.of(1D) : NumberValue.zero();
-    }
-
-    static Value of(final double _double) {
-        return NumberValue.of(_double);
-    }
-
-    static Value of(final @Nullable String string) {
-        return string == null ? nil() : StringValue.of(string);
-    }
-
+public sealed interface Value permits ArrayValue, Function, ObjectValue, SingleValue {
     static Value nil() {
-        return NumberValue.zero();
+        return DoubleValue.ZERO;
     }
 
     default double getAsNumber() {
-        if (this instanceof NumberValue) {
-            return ((NumberValue) this).value();
+        if (this instanceof DoubleValue num) {
+            return num.doubleValue();
         } else {
             return 0;
         }
     }
 
     default boolean getAsBoolean() {
-        if (this instanceof NumberValue) {
-            return ((NumberValue) this).value() != 0D;
-        } else if (this instanceof StringValue) {
-            return !((StringValue) this).value().isEmpty();
-        } else if (this instanceof ArrayValue) {
-            return ((ArrayValue) this).values().length != 0;
-        } else if (this instanceof ObjectValue) {
-            return !((ObjectValue) this).entries().isEmpty();
-        } else {
-            return true;
-        }
+        return switch (this) {
+            case DoubleValue num -> num.doubleValue() != 0D;
+            case StringValue str -> !str.value().isEmpty();
+            case ArrayValue arr -> arr.values().length != 0;
+            case ObjectValue obj -> !obj.entries().isEmpty();
+            default -> true;
+        };
     }
 
     default boolean isString() {
-        return this instanceof StringValue;
+        return this instanceof StringValueImpl;
     }
 
     default String getAsString() {
-        if (this instanceof StringValue) {
-            return ((StringValue) this).value();
-        } else if (this instanceof NumberValue) {
-            return Double.toString(((NumberValue) this).value());
-        } else if (this instanceof ArrayValue) {
-            final Value[] values = ((ArrayValue) this).values();
-            final StringJoiner joiner = new StringJoiner(", ", "[", "]");
-            for (final Value value : values) {
-                joiner.add(value.getAsString());
+        return switch (this) {
+            case StringValue str -> str.value();
+            case DoubleValue num -> Double.toString(num.doubleValue());
+            case ArrayValue arr -> {
+                final Value[] values = arr.values();
+                final StringJoiner joiner = new StringJoiner(", ", "[", "]");
+                for (final Value value : values) {
+                    joiner.add(value.getAsString());
+                }
+                yield joiner.toString();
             }
-            return joiner.toString();
-        } else if (this instanceof ObjectValue) {
-            final Map<String, ObjectProperty> values = ((ObjectValue) this).entries();
-            final StringJoiner joiner = new StringJoiner(", ", "{", "}");
-            for (final Map.Entry<String, ObjectProperty> entry : values.entrySet()) {
-                joiner.add(entry.getKey() + ": " + entry.getValue().value().getAsString());
+            case ObjectValue obj -> {
+                final Map<String, ObjectProperty> values = obj.entries();
+                final StringJoiner joiner = new StringJoiner(", ", "{", "}");
+                for (final Map.Entry<String, ObjectProperty> entry : values.entrySet()) {
+                    joiner.add(entry.getKey() + ": " + entry.getValue().value().getAsString());
+                }
+                yield joiner.toString();
             }
-            return joiner.toString();
-        } else if (this instanceof Function<?>) {
-            return "Function(" + this + ")";
-        } else {
-            throw new IllegalArgumentException("Unknown value type: " + this.getClass().getName());
-        }
+            case Function<?> $ -> "Function(" + this + ")";
+            default -> throw new IllegalArgumentException("Unknown value type: " + this.getClass().getName());
+        };
     }
 }

@@ -79,7 +79,7 @@ public class CompareTest {
                     float expectedValue = Float.parseFloat(expected);
 
                     // eval expression
-                    final double result = ENGINE.eval(expression);
+                    final double result = ENGINE.eval(expression).getAsNumber();
                     Assertions.assertEquals(
                             expectedValue,
                             (float) result,
@@ -88,7 +88,7 @@ public class CompareTest {
 
                     // compile and eval expression
                     try {
-                        final double compileResult = ENGINE.compile(expression).evaluate();
+                        final double compileResult = (double) ENGINE.compile(expression).evaluate();
                         Assertions.assertEquals(
                                 expectedValue,
                                 (float) compileResult,

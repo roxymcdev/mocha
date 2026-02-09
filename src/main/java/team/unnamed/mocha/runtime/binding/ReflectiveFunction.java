@@ -43,31 +43,31 @@ final class ReflectiveFunction<T> implements Function<T> {
         this.method = requireNonNull(method, "method");
     }
 
-    static Value of(final @Nullable Object any) {
-        if (any instanceof Value) {
-            return (Value) any;
-        } else if (any instanceof Number) {
-            return NumberValue.of(((Number) any).doubleValue());
-        } else if (any instanceof String) {
-            return StringValue.of((String) any);
-        } else if (any instanceof Boolean) {
-            return (Boolean) any ? NumberValue.of(1D) : NumberValue.zero();
-        } else {
-            if (any != null && any.getClass().isArray()) {
+    static Value wrapValue(final @Nullable Object any) {
+        return switch (any) {
+            case Value value -> value;
+            case Number num -> DoubleValue.of(num.doubleValue());
+            case String str -> StringValue.of(str);
+            case Boolean bool -> bool ? DoubleValue.of(1D) : DoubleValue.ZERO;
+            case null, default -> {
+                if (any == null) {
+                    yield Value.nil();
+                }
+
+                if (!any.getClass().isArray()) {
+                    // small change here, use javaValue
+                    yield new JavaValue(any);
+                }
+
                 // array types
                 final int length = Array.getLength(any);
                 final Value[] values = new Value[length];
                 for (int i = 0; i < length; i++) {
-                    values[i] = of(Array.get(any, i));
+                    values[i] = wrapValue(Array.get(any, i));
                 }
-                return ArrayValue.of(values);
-            } else if (any != null) {
-                // small change here, use javaValue
-                return new JavaValue(any);
-            } else {
-                return Value.nil();
+                yield ArrayValue.of(values);
             }
-        }
+        };
     }
 
     @Override
@@ -141,7 +141,7 @@ final class ReflectiveFunction<T> implements Function<T> {
         }
 
         try {
-            return of(method.invoke(object, values));
+            return wrapValue(method.invoke(object, values));
         } catch (final Exception exception) {
             throw new RuntimeException(exception);
         }

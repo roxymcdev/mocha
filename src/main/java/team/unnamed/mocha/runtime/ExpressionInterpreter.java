@@ -35,7 +35,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 @ApiStatus.Internal
-public final class ExpressionInterpreter<T extends @Nullable Object> implements ExpressionVisitor<Value>, ExecutionContext<T> {
+public final class ExpressionInterpreter<T extends @Nullable Object> implements ExpressionVisitor<Value, ExpressionVisitor.Context>, ExecutionContext<T> {
     private static final List<Evaluator> BINARY_EVALUATORS = Arrays.asList(
             bool((a, b) -> a.eval() && b.eval()),
             bool((a, b) -> a.eval() || b.eval()),
@@ -50,7 +50,7 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
                 // if (aVal.isString() || bVal.isString()) {
                 //     return StringValue.of(aVal.getAsString() + bVal.getAsString());
                 // } else {
-                return NumberValue.of(aVal.getAsNumber() + bVal.getAsNumber());
+                return DoubleValue.of(aVal.getAsNumber() + bVal.getAsNumber());
                 // }
             },
             arithmetic((a, b) -> a.eval() - b.eval()),
@@ -64,23 +64,21 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
                 else return dividend / divisor;
             }),
             (evaluator, a, b) -> { // arrow
-                final Value val = a.visit(evaluator);
-                if (!(val instanceof JavaValue)) {
-                    return NumberValue.zero();
-                } else {
-                    return b.visit(evaluator.createChild(((JavaValue) val).value()));
+                final Value value = a.visit(evaluator);
+
+                if (value instanceof JavaValue(Object theValue)) {
+                    return b.visit(evaluator.createChild(theValue));
                 }
+
+                return DoubleValue.ZERO;
             },
             (evaluator, a, b) -> { // null coalesce
-                final Value val = a.visit(evaluator);
-                if (val.getAsBoolean()) {
-                    return val;
-                } else {
-                    return b.visit(evaluator);
-                }
+                final Value value = a.visit(evaluator);
+                return value.getAsBoolean() ? value : b.visit(evaluator);
             },
             (evaluator, a, b) -> { // assignation
-                final Value val = b.visit(evaluator);
+                final Value value = b.visit(evaluator);
+
                 // we can only assign to values that are accessed
                 // like:
                 //      temp.x = 1
@@ -88,26 +86,27 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
                 // but not:
                 //      x = 1
                 //      i = 2
-                if (a instanceof AccessExpression) {
-                    final AccessExpression access = (AccessExpression) a;
+                if (a instanceof AccessExpression access) {
                     final Value objectValue = access.object().visit(evaluator);
-                    if (objectValue instanceof MutableObjectBinding) {
-                        ((MutableObjectBinding) objectValue).set(access.property(), val);
+
+                    if (objectValue instanceof MutableObjectBinding objectBinding) {
+                        objectBinding.set(access.property(), value);
                     }
                 }
-                return val;
+
+                return value;
             },
             (evaluator, a, b) -> { // conditional
                 final Value conditionValue = a.visit(evaluator);
                 if (conditionValue.getAsBoolean()) {
                     final Value predicateVal = b.visit(evaluator);
                     if (predicateVal instanceof Function) {
-                        return Value.of(((Function) predicateVal).evaluate(evaluator));
+                        return ((Function) predicateVal).evaluate(evaluator);
                     } else {
                         return predicateVal;
                     }
                 }
-                return NumberValue.zero();
+                return DoubleValue.ZERO;
             },
             arithmetic((a, b) -> ((a.eval() == b.eval()) ? 1.0F : 0.0F)), // eq
             arithmetic((a, b) -> ((a.eval() != b.eval()) ? 1.0F : 0.0F))  // neq
@@ -126,21 +125,21 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
     }
 
     private static Evaluator bool(BooleanOperator op) {
-        return (evaluator, a, b) -> Value.of(op.operate(
+        return (evaluator, a, b) -> DoubleValue.of(op.operate(
                 () -> a.visit(evaluator).getAsBoolean(),
                 () -> b.visit(evaluator).getAsBoolean()
         ));
     }
 
     private static Evaluator compare(Comparator comp) {
-        return (evaluator, a, b) -> Value.of(comp.compare(
+        return (evaluator, a, b) -> DoubleValue.of(comp.compare(
                 () -> a.visit(evaluator).getAsNumber(),
                 () -> b.visit(evaluator).getAsNumber()
         ));
     }
 
     private static Evaluator arithmetic(ArithmeticOperator op) {
-        return (evaluator, a, b) -> NumberValue.of(op.operate(
+        return (evaluator, a, b) -> DoubleValue.of(op.operate(
                 () -> a.visit(evaluator).getAsNumber(),
                 () -> b.visit(evaluator).getAsNumber()
         ));
@@ -191,7 +190,7 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
     }
 
     @Override
-    public Value visitArrayAccess(final ArrayAccessExpression expression) {
+    public Value visitArrayAccess(final ArrayAccessExpression expression, final Context ctx) {
         final Value array = expression.array().visit(this);
         final Value index = expression.index().visit(this);
         if (!(array instanceof ArrayValue)) {
@@ -204,16 +203,16 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
     }
 
     @Override
-    public Value visitAccess(final AccessExpression expression) {
+    public Value visitAccess(final AccessExpression expression, final Context ctx) {
         final Value objectValue = expression.object().visit(this);
         if (objectValue instanceof ObjectValue) {
             return ((ObjectValue) objectValue).get(expression.property());
         }
-        return NumberValue.zero();
+        return DoubleValue.ZERO;
     }
 
     @Override
-    public @Nullable Value visitCall(final CallExpression expression) {
+    public @Nullable Value visitCall(final CallExpression expression, final Context ctx) {
         final List<Expression> argumentsExpressions = expression.arguments();
         final Function.Argument[] arguments = new Function.Argument[argumentsExpressions.size()];
         for (int i = 0; i < argumentsExpressions.size(); i++) {
@@ -231,28 +230,31 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
                 // - CallableBinding:  The looped expressions
 
                 Value timesValue = args.next().eval();
-                if (!(timesValue instanceof NumberValue)) {
-                    return NumberValue.zero();
+                if (!(timesValue instanceof DoubleValue)) {
+                    return DoubleValue.ZERO;
                 }
 
                 int times = Math.round((float) timesValue.getAsNumber());
 
                 Value expr = args.next().eval();
 
-                if (expr instanceof Function) {
-                    final Function<T> callable = (Function<T>) expr;
-                    for (int i = 0; i < times; i++) {
-                        final ExpressionInterpreter<T> evaluatorThisCall = createChild();
-                        callable.evaluate(evaluatorThisCall);
-                        if (evaluatorThisCall.flag() == StatementExpression.Op.BREAK) {
-                            break;
-                        }
-                        // (not necessary, callable already exits when returnValue
-                        //  is set to any non-null value)
-                        // if (value == StatementExpression.Op.CONTINUE) continue;
+                if (!(expr instanceof Function callable)) {
+                    return DoubleValue.ZERO;
+                }
+
+                for (int i = 0; i < times; i++) {
+                    final ExpressionInterpreter<T> interpreter = createChild();
+
+                    callable.evaluate(interpreter);
+
+                    if (interpreter.returnValue != null) {
+                        return interpreter.returnValue;
+                    } else if (interpreter.flag == StatementExpression.Op.BREAK) {
+                        break;
                     }
                 }
-                return NumberValue.zero();
+
+                return DoubleValue.ZERO;
             } else if ("for_each".equals(identifierName)) {
                 // for each built-in function
                 // Parameters:
@@ -260,44 +262,47 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
                 // - array:            Any array
                 // - CallableBinding:  The looped expressions
                 final Expression variableExpr = args.next().expression();
-                if (!(variableExpr instanceof AccessExpression)) {
+                if (!(variableExpr instanceof AccessExpression variableAccess)) {
                     // first argument must be an access expression,
                     // e.g. 'variable.test', 'v.pig', 't.entity' or
                     // 't.entity.location.world'
-                    return NumberValue.zero();
+                    return DoubleValue.ZERO;
                 }
-                final AccessExpression variableAccess = (AccessExpression) variableExpr;
                 final Expression objectExpr = variableAccess.object();
                 final String propertyName = variableAccess.property();
 
                 final Value array = args.next().eval();
                 final Iterable<Value> arrayIterable;
                 if (array instanceof ArrayValue) {
-                    arrayIterable = Arrays.asList(((ArrayValue) array).values());
+                    arrayIterable = (ArrayValue) array;
                 } else {
                     // second argument must be an array or iterable
-                    return NumberValue.zero();
+                    return DoubleValue.ZERO;
                 }
 
                 final Value expr = args.next().eval();
 
-                if (expr instanceof Function) {
-                    final Function callable = (Function) expr;
-                    for (final Value val : arrayIterable) {
-                        // set 'val' as current value
-                        // eval (objectExpr.propertyName = val)
-                        final Value evaluatedObjectValue = this.eval(objectExpr);
-                        if (evaluatedObjectValue instanceof MutableObjectBinding) {
-                            ((MutableObjectBinding) evaluatedObjectValue).set(propertyName, val);
-                        }
-                        final Object returnValue = callable.evaluate(this);
+                if (!(expr instanceof Function callable)) {
+                    return DoubleValue.ZERO;
+                }
 
-                        if (returnValue == StatementExpression.Op.BREAK) {
-                            break;
-                        }
+                for (final Value val : arrayIterable) {
+                    final ExpressionInterpreter<T> interpreter = createChild();
+
+                    final Value evaluatedObjectValue = eval(objectExpr);
+                    if (evaluatedObjectValue instanceof MutableObjectBinding objectBinding) {
+                        objectBinding.set(propertyName, val);
+                    }
+
+                    callable.evaluate(interpreter);
+
+                    if (interpreter.returnValue != null) {
+                        return interpreter.returnValue;
+                    } else if (interpreter.flag == StatementExpression.Op.BREAK) {
+                        break;
                     }
                 }
-                return NumberValue.zero();
+                return DoubleValue.ZERO;
             }
         }
 
@@ -315,12 +320,12 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
     }
 
     @Override
-    public Value visitDouble(final DoubleExpression expression) {
-        return NumberValue.of(expression.value());
+    public Value visitDouble(final DoubleExpression expression, final Context ctx) {
+        return DoubleValue.of(expression.value());
     }
 
     @Override
-    public Value visitExecutionScope(final ExecutionScopeExpression executionScope) {
+    public Value visitExecutionScope(final ExecutionScopeExpression executionScope, final Context ctx) {
         List<Expression> expressions = executionScope.expressions();
         return (Function<T>) (context, arguments) -> {
             for (Expression expression : expressions) {
@@ -332,17 +337,17 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
                     break;
                 }
             }
-            return NumberValue.zero();
+            return DoubleValue.ZERO;
         };
     }
 
     @Override
-    public Value visitIdentifier(final IdentifierExpression expression) {
+    public Value visitIdentifier(final IdentifierExpression expression, final Context ctx) {
         return scope.get(expression.name());
     }
 
     @Override
-    public Value visitBinary(BinaryExpression expression) {
+    public Value visitBinary(BinaryExpression expression, final Context ctx) {
         return BINARY_EVALUATORS.get(expression.op().ordinal()).eval(
                 this,
                 expression.left(),
@@ -351,44 +356,36 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
     }
 
     @Override
-    public Value visitUnary(final UnaryExpression expression) {
+    public Value visitUnary(final UnaryExpression expression, final Context ctx) {
         final Value value = expression.expression().visit(this);
-        switch (expression.op()) {
-            case LOGICAL_NEGATION:
-                return Value.of(!value.getAsBoolean());
-            case ARITHMETICAL_NEGATION:
-                return NumberValue.of(-value.getAsNumber());
-            case RETURN: {
+
+        return switch (expression.op()) {
+            case LOGICAL_NEGATION -> DoubleValue.of(!value.getAsBoolean());
+            case ARITHMETICAL_NEGATION -> DoubleValue.of(-value.getAsNumber());
+            case RETURN -> {
                 this.returnValue = value;
-                return NumberValue.zero();
+                yield DoubleValue.ZERO;
             }
-            default:
-                throw new IllegalStateException("Unknown operation");
-        }
+        };
     }
 
     @Override
-    public Value visitStatement(final StatementExpression expression) {
-        switch (expression.op()) {
-            case BREAK: {
-                this.flag = StatementExpression.Op.BREAK;
-                break;
-            }
-            case CONTINUE: {
-                this.flag = StatementExpression.Op.CONTINUE;
-                break;
-            }
-        }
-        return NumberValue.zero();
+    public Value visitStatement(final StatementExpression expression, final Context ctx) {
+        this.flag = switch (expression.op()) {
+            case BREAK -> StatementExpression.Op.BREAK;
+            case CONTINUE -> StatementExpression.Op.CONTINUE;
+        };
+
+        return DoubleValue.ZERO;
     }
 
     @Override
-    public Value visitString(final StringExpression expression) {
+    public Value visitString(final StringExpression expression, final Context ctx) {
         return StringValue.of(expression.value());
     }
 
     @Override
-    public Value visitTernaryConditional(TernaryConditionalExpression expression) {
+    public Value visitTernaryConditional(TernaryConditionalExpression expression, final Context ctx) {
         final Value conditionResult = expression.condition().visit(this);
         return conditionResult.getAsBoolean()
                 ? expression.trueExpression().visit(this)
@@ -396,7 +393,7 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
     }
 
     @Override
-    public Value visit(final Expression expression) {
+    public Value visit(final Expression expression, final Context ctx) {
         throw new UnsupportedOperationException("Unsupported expression type: " + expression);
     }
 
@@ -460,7 +457,7 @@ public final class ExpressionInterpreter<T extends @Nullable Object> implements 
 
         @Override
         public @Nullable Value eval() {
-            return NumberValue.zero();
+            return DoubleValue.ZERO;
         }
     }
 

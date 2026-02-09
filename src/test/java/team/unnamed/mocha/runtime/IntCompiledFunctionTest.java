@@ -28,11 +28,13 @@ import team.unnamed.mocha.MochaEngine;
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
 import team.unnamed.mocha.runtime.compiled.Named;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class IntCompiledFunctionTest {
     @Test
-    void test() throws Exception {
+    void test() throws IOException {
         final var function = MochaEngine.createStandard().compile("math.mod(value / 20, 3)", IntFunction.class);
 
         assertEquals(0, function.get(0));

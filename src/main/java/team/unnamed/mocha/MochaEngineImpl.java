@@ -27,22 +27,18 @@ import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import org.jspecify.annotations.Nullable;
 import team.unnamed.mocha.parser.MolangParser;
-import team.unnamed.mocha.parser.ParseException;
 import team.unnamed.mocha.parser.ast.Expression;
 import team.unnamed.mocha.runtime.ExpressionInterpreter;
-import team.unnamed.mocha.runtime.MochaFunction;
 import team.unnamed.mocha.runtime.MolangCompiler;
 import team.unnamed.mocha.runtime.Scope;
 import team.unnamed.mocha.runtime.binding.JavaObjectBinding;
 import team.unnamed.mocha.runtime.compiled.MochaCompiledFunction;
+import team.unnamed.mocha.runtime.value.DoubleValue;
 import team.unnamed.mocha.runtime.value.MutableObjectBinding;
-import team.unnamed.mocha.runtime.value.NumberValue;
 import team.unnamed.mocha.runtime.value.Value;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -51,7 +47,6 @@ final class MochaEngineImpl<T extends @Nullable Object> implements MochaEngine<T
     private final T entity;
     private final MolangCompiler compiler;
 
-    private @Nullable Consumer<ParseException> parseExceptionHandler;
     private boolean warnOnReflectiveFunctionUsage;
 
     public MochaEngineImpl(final T entity, final Consumer<Scope.Builder> scopeBuilder) {
@@ -63,7 +58,12 @@ final class MochaEngineImpl<T extends @Nullable Object> implements MochaEngine<T
     }
 
     @Override
-    public double eval(final List<Expression> expressions) {
+    public List<Expression> parse(final Reader reader) throws IOException {
+        return MolangParser.parser(reader).parseAll();
+    }
+
+    @Override
+    public Value eval(final List<Expression> expressions) {
         // create bindings that just apply for this evaluation
         final Scope local = scope.copy();
         {
@@ -73,115 +73,27 @@ final class MochaEngineImpl<T extends @Nullable Object> implements MochaEngine<T
             local.set("t", temp);
         }
         local.readOnly(true);
+
         ExpressionInterpreter<T> evaluator = new ExpressionInterpreter<>(entity, local);
         evaluator.warnOnReflectiveFunctionUsage(warnOnReflectiveFunctionUsage);
-        Value lastResult = NumberValue.zero();
+
+        Value lastValue = DoubleValue.ZERO;
 
         for (Expression expression : expressions) {
-            lastResult = expression.visit(evaluator);
+            lastValue = expression.visit(evaluator);
             Value returnValue = evaluator.popReturnValue();
             if (returnValue != null) {
-                lastResult = returnValue;
+                lastValue = returnValue;
                 break;
             }
         }
 
-        return lastResult.getAsNumber();
+        return lastValue;
     }
 
     @Override
-    public double eval(final Reader source) {
-        final List<Expression> parsed;
-        try {
-            parsed = parse(source);
-        } catch (final ParseException e) {
-            // parse errors just output zero
-            if (parseExceptionHandler != null) {
-                parseExceptionHandler.accept(e);
-            }
-            return 0;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to read from given reader", e);
-        }
-        return eval(parsed);
-    }
-
-    @Override
-    public MochaFunction prepareEval(final Reader reader) {
-        final List<Expression> parsed;
-        try {
-            parsed = parse(reader);
-        } catch (final ParseException e) {
-            // parse errors just output zero
-            if (parseExceptionHandler != null) {
-                parseExceptionHandler.accept(e);
-            }
-            return () -> 0D;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to read from given reader", e);
-        }
-        return new MochaFunction() {
-            @Override
-            public double evaluate() {
-                return eval(parsed);
-            }
-
-            @Override
-            public String toString() {
-                return "MochaPreparedFunction(" + parsed + ")";
-            }
-        };
-    }
-
-    @Override
-    public MochaFunction prepareEval(final String code) {
-        final List<Expression> parsed;
-        try {
-            parsed = parse(code);
-        } catch (final ParseException e) {
-            // parse errors just output zero
-            if (parseExceptionHandler != null) {
-                parseExceptionHandler.accept(e);
-            }
-            return new MochaFunction() {
-                @Override
-                public double evaluate() {
-                    return 0D;
-                }
-
-                @Override
-                public String toString() {
-                    return "MochaPreparedFunction('" + code + "', " + e.getMessage() + ")";
-                }
-            };
-        }
-
-        return new MochaFunction() {
-            @Override
-            public double evaluate() {
-                return eval(parsed);
-            }
-
-            @Override
-            public String toString() {
-                return "MochaPreparedFunction(" + parsed + ")";
-            }
-        };
-    }
-
-    @Override
-    public <F extends MochaCompiledFunction> F compile(final Reader reader, final TypeToken<F> interfaceType) {
-        List<Expression> parsed;
-        try {
-            parsed = parse(reader);
-        } catch (final ParseException e) {
-            if (parseExceptionHandler != null) {
-                parseExceptionHandler.accept(e);
-            }
-            parsed = Collections.emptyList();
-        } catch (final IOException e) {
-            throw new RuntimeException("Failed to read from given reader", e);
-        }
+    public <F extends MochaCompiledFunction> F compile(final Reader reader, final TypeToken<F> interfaceType) throws IOException {
+        List<Expression> parsed = parse(reader);
         return compiler.compile(parsed, interfaceType);
     }
 
@@ -204,17 +116,12 @@ final class MochaEngineImpl<T extends @Nullable Object> implements MochaEngine<T
     }
 
     @Override
-    public <B> void bindInstance(final Class<? super B> clazz, final B instance, final String name, final String ... aliases) {
+    public <B> void bindInstance(final Class<? super B> clazz, final B instance, final String name, final String... aliases) {
         final JavaObjectBinding javaObjectBinding = JavaObjectBinding.of(clazz, instance, null);
         scope.set(name, javaObjectBinding);
         for (final String alias : aliases) {
             scope.set(alias, javaObjectBinding);
         }
-    }
-
-    @Override
-    public List<Expression> parse(final Reader reader) throws IOException {
-        return MolangParser.parser(reader).parseAll();
     }
 
     @Override
@@ -224,13 +131,7 @@ final class MochaEngineImpl<T extends @Nullable Object> implements MochaEngine<T
     }
 
     @Override
-    public MochaEngine<T> handleParseExceptions(final @Nullable Consumer<ParseException> exceptionHandler) {
-        this.parseExceptionHandler = exceptionHandler;
-        return this;
-    }
-
-    @Override
-    public MochaEngine<T> postCompile(final @Nullable Consumer<byte []> bytecodeConsumer) {
+    public MochaEngine<T> postCompile(final @Nullable Consumer<byte[]> bytecodeConsumer) {
         compiler.postCompile(bytecodeConsumer);
         return this;
     }

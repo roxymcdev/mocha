@@ -23,57 +23,50 @@
  */
 package team.unnamed.mocha.runtime;
 
-import com.google.common.reflect.TypeToken;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.bytecode.Bytecode;
 import team.unnamed.mocha.util.CaseInsensitiveStringHashMap;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
 final class FunctionCompileState {
     private final MolangCompiler compiler;
-    private final TypeToken<?> typeToken;
 
     private final ClassPool classPool;
     private final CtClass ctClass;
     private final Bytecode bytecode;
-    private final Method method;
+
+    private final Map<String, CtClass> parametersCtTypes;
 
     private final Map<String, Object> requirements = new CaseInsensitiveStringHashMap<>();
     private final Scope scope;
-    private final Map<String, Integer> argumentParameterIndexes;
+
     private int maxLocals = 0;
 
     FunctionCompileState(
             MolangCompiler compiler,
-            TypeToken<?> typeToken,
             ClassPool classPool,
             CtClass ctClass,
             Bytecode bytecode,
-            Method method,
-            Scope scope,
-            Map<String, Integer> argumentParameterIndexes
+            Map<String, CtClass> parametersCtTypes,
+            Scope scope
     ) {
         this.compiler = requireNonNull(compiler, "compiler");
-        this.typeToken = requireNonNull(typeToken, "typeToken");
+
         this.classPool = requireNonNull(classPool, "classPool");
         this.ctClass = requireNonNull(ctClass, "ctClass");
         this.bytecode = requireNonNull(bytecode, "bytecode");
-        this.method = requireNonNull(method, "method");
+
+        this.parametersCtTypes = requireNonNull(parametersCtTypes, "parametersCtTypes");
+
         this.scope = requireNonNull(scope, "scope");
-        this.argumentParameterIndexes = requireNonNull(argumentParameterIndexes, "argumentParameterIndexes");
     }
 
     public MolangCompiler compiler() {
         return compiler;
-    }
-
-    public TypeToken<?> typeToken() {
-        return typeToken;
     }
 
     public ClassPool classPool() {
@@ -88,8 +81,8 @@ final class FunctionCompileState {
         return bytecode;
     }
 
-    public Method method() {
-        return method;
+    public Map<String, CtClass> parametersCtTypes() {
+        return parametersCtTypes;
     }
 
     public Map<String, Object> requirements() {
@@ -98,10 +91,6 @@ final class FunctionCompileState {
 
     public Scope scope() {
         return scope;
-    }
-
-    public Map<String, Integer> argumentParameterIndexes() {
-        return argumentParameterIndexes;
     }
 
     public int maxLocals() {

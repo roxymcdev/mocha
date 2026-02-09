@@ -49,7 +49,7 @@ public non-sealed interface Function<T extends @Nullable Object> extends Value {
      * @return The function result
      * @since 3.0.0
      */
-    @Nullable Value evaluate(final ExecutionContext<T> context, final Arguments arguments);
+    Value evaluate(final ExecutionContext<T> context, final Arguments arguments);
 
     /**
      * Executes this function.
@@ -58,7 +58,7 @@ public non-sealed interface Function<T extends @Nullable Object> extends Value {
      * @return The function result
      * @since 3.0.0
      */
-    default @Nullable Value evaluate(final ExecutionContext<T> context) {
+    default Value evaluate(final ExecutionContext<T> context) {
         return evaluate(context, Arguments.empty());
     }
 

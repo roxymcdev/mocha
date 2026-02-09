@@ -41,7 +41,7 @@ import java.util.function.Function;
  * @see HashMap
  * @since 3.0.0
  */
-public class CaseInsensitiveStringHashMap<V extends @Nullable Object> extends HashMap<String, V> {
+public class CaseInsensitiveStringHashMap<V extends @Nullable Object> extends LinkedHashMap<String, V> {
     private @Nullable Set<String> keySet;
     private @Nullable Set<Map.Entry<String, V>> entrySet;
 
@@ -67,7 +67,7 @@ public class CaseInsensitiveStringHashMap<V extends @Nullable Object> extends Ha
 
     private static <V extends @Nullable Object> Map<? extends String, ? extends V> lowercaseMap(Map<? extends String, ? extends V> m) {
         final Map<String, V> lowercased = new HashMap<>();
-        for (Entry<? extends String, ? extends V> entry : m.entrySet()) {
+        for (Map.Entry<? extends String, ? extends V> entry : m.entrySet()) {
             lowercased.put(lowercase(entry.getKey()), entry.getValue());
         }
         return lowercased;
@@ -109,7 +109,7 @@ public class CaseInsensitiveStringHashMap<V extends @Nullable Object> extends Ha
     }
 
     @Override
-    public Set<Entry<String, V>> entrySet() {
+    public Set<Map.Entry<String, V>> entrySet() {
         Set<Map.Entry<String, V>> es;
         return (es = entrySet) == null ? (entrySet = new CaseInsensitiveEntrySet(super.entrySet())) : es;
     }
